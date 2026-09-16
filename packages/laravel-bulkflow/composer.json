@@ -1,0 +1,51 @@
+{
+  "name": "bulkflow/laravel-bulkflow",
+  "description": "Streaming bulk imports and exports for Laravel.",
+  "type": "library",
+  "license": "MIT",
+  "homepage": "https://github.com/tinahp09/-Laravel-BulkFlow",
+  "support": {
+    "issues": "https://github.com/tinahp09/-Laravel-BulkFlow/issues",
+    "source": "https://github.com/tinahp09/-Laravel-BulkFlow"
+  },
+  "require": {
+    "php": "^8.2",
+    "illuminate/support": "^12.0 || ^13.0",
+    "openspout/openspout": "^4.28"
+  },
+  "require-dev": {
+    "laravel/pint": "^1.32",
+    "league/flysystem-aws-s3-v3": "^3.35",
+    "orchestra/testbench": "^9.0 || ^10.0",
+    "phpstan/phpstan": "^2.2",
+    "phpunit/phpunit": "^10.5 || ^11.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "BulkFlow\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "BulkFlow\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "BulkFlow\\BulkFlowServiceProvider"
+      ]
+    }
+  },
+  "scripts": {
+    "test": "phpunit",
+    "lint": "pint --test",
+    "format": "pint",
+    "analyse": "phpstan analyse --memory-limit=1G"
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}

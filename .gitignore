@@ -1,0 +1,13 @@
+node_modules/
+packages/*/node_modules/
+packages/*/vendor/
+packages/*/dist/
+packages/*/.phpunit.result.cache
+demo/vue-app/dist/
+demo/vue-app/node_modules/
+demo/laravel-app/vendor/
+demo/laravel-app/public/build/
+demo/laravel-app/storage/
+demo/laravel-app/.env
+demo/laravel-app/database/*.sqlite
+.DS_Store

@@ -139,7 +139,7 @@ BulkFlow باید این پیچیدگی را به یک flow قابل‌پیش‌
 
 - Laravel package و Vue package پایدار با versioning مشخص
 - مستندات کامل، demo application و migration guide
-- test matrix و GitHub Actions
+- test matrix و verification محلیِ قابل‌تکرار (بدون workflow خودکار در این repository)
 - انتشار Packagist و NPM
 - compatibility matrix برای نسخه‌های پشتیبانی‌شدهٔ PHP و Laravel
 
@@ -334,7 +334,7 @@ endpointهای نمونه (اختیاری؛ application می‌تواند نام
 4. retry failed rows، ردیف‌های موفق قبلی را دوباره persist نکند.
 5. تست‌ها parsing، mapping، validation، create/insert/upsert، queue orchestration، cancellation، export و failure report را پوشش دهند.
 6. یک demo app، فایل نمونه و مسیر end-to-end برای 100,000 ردیف ارائه شود.
-7. CI روی matrix تعریف‌شدهٔ PHP/Laravel اجرا شود و lint/test/package build را پوشش دهد.
+7. verification محلی روی matrix تعریف‌شدهٔ PHP/Laravel، lint/test/package build را پوشش دهد؛ workflow خودکار در این repository ایجاد نمی‌شود.
 8. مستندات نصب، quick start، configuration، performance tuning، security، upgrade و troubleshooting داشته باشند.
 
 ## 15. راهبرد تست و کیفیت
@@ -342,7 +342,7 @@ endpointهای نمونه (اختیاری؛ application می‌تواند نام
 - **Unit:** mapper، normalizer، transformer، rule adapter، state machine و persistence strategy.
 - **Integration:** CSV/XLSX واقعی، database test، Storage fake، Queue fake و Bus batch.
 - **End-to-end:** import synchronous، queued import، export queued، failure report و retry.
-- **Performance regression:** fixtureهای 10k و 100k ردیفی، ثبت زمان و peak memory در CI شبانه یا workflow دستی.
+- **Performance regression:** fixtureهای 10k و 100k ردیفی، ثبت زمان و peak memory در اجرای محلیِ مستندِ maintainer.
 - **Contract tests:** هر reader/writer driver باید contract مشترک را پاس کند.
 - **Static quality:** formatter، static analysis و mutation testing به‌عنوان اهداف پس از پایدارشدن core.
 
@@ -363,8 +363,8 @@ endpointهای نمونه (اختیاری؛ application می‌تواند نام
 
 - Packagist برای Laravel package
 - NPM برای Vue package
-- GitHub Releases و changelog برای هر release
-- GitHub Actions برای test matrix، build و انتشار کنترل‌شده با tag
+- release tag در repository canonical و changelog برای هر release
+- اجرای دستی و مستند test matrix و build پیش از انتشار کنترل‌شده با tag
 
 ## 17. ریسک‌ها و تصمیم‌های باز
 
@@ -384,7 +384,7 @@ endpointهای نمونه (اختیاری؛ application می‌تواند نام
 - یک پروژهٔ demo بتواند import 100,000-row را با queue اجرا و summary معتبر ثبت کند.
 - یک consumer بدون نوشتن parser سفارشی، در کمتر از 30 دقیقه quick start را تکمیل کند.
 - failure report برای هر row ناموفق علت عملیاتی داشته باشد.
-- CI برای همهٔ نسخه‌های پشتیبانی‌شده سبز باشد و releaseها reproducible باشند.
+- verification دستی برای همهٔ نسخه‌های پشتیبانی‌شده سبز باشد و releaseها reproducible باشند.
 - issueهای مربوط به memory/timeout در importهای بزرگ با benchmark و configuration قابل‌بازآفرینی باشند.
 
 ## 19. مراحل پیشنهادی اجرای Roadmap
@@ -393,7 +393,6 @@ endpointهای نمونه (اختیاری؛ application می‌تواند نام
 2. **V0.1:** parsing و export، pipeline ردیفی، persistence، quick start و test suite.
 3. **V0.2–V0.3:** snapshot/run storage، chunk jobs، metrics، failure store و retry flow.
 4. **V0.4–V0.5:** HTTP adapter اختیاری، Vue wizard، polling سپس broadcasting.
-5. **V0.6–V1.0:** S3/scheduler/notification/authorization hooks، hardening، demo، docs، CI و انتشار.
+5. **V0.6–V1.0:** S3/scheduler/notification/authorization hooks، hardening، demo، docs، verification محلی و انتشار.
 
 هر milestone باید با یک نمونهٔ end-to-end، benchmark متناسب و release note بسته شود. ویژگی‌ای که API عمومی یا schema را تغییر می‌دهد قبل از توسعه باید ADR کوتاه داشته باشد.
-

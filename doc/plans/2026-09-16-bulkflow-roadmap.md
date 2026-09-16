@@ -19,6 +19,7 @@
 - transaction پیش‌فرض در مرز هر chunk است.
 - HTTP route و Vue UI نباید منطق domain را کپی کنند.
 - هر مرحله فقط پس از تست unit/integration سبز، benchmark متناسب و changelog تکمیل‌شده وارد مرحله بعد می‌شود.
+- GitHub Actions و workflowهای CI خارج از دامنهٔ فعلی‌اند؛ بررسی‌ها به‌صورت local اجرا می‌شوند.
 
 ---
 
@@ -35,10 +36,10 @@
 
 ## تصمیم‌های معماری که باید پیش از Task 1 قفل شوند
 
-- [ ] **ADR-001 — package identity and compatibility:** نام Composer (`bulkflow/laravel-bulkflow` مگر آن‌که مالک نام دیگری انتخاب کند)، namespace (`BulkFlow`)، حداقل PHP و Laravel matrix را ثبت کنید. خروجی: `doc/adr/001-package-identity.md`.
-- [ ] **ADR-002 — spreadsheet adapter:** OpenSpout را با fixtureهای 10k و 100k ردیف در برابر نیازهای XLSX بررسی و به‌عنوان adapter اولیه تثبیت کنید. خروجی: `doc/adr/002-spreadsheet-adapter.md` و benchmark قابل تکرار.
-- [ ] **ADR-003 — persistence semantics:** تفاوت `create`، `insert` و `upsert`، eventهای Eloquent، null handling و کلید idempotency را تعریف کنید. خروجی: `doc/adr/003-persistence-semantics.md`.
-- [ ] **ADR-004 — stored failure privacy:** کلیدهای redact، retention و access control پیش‌فرض را تعیین کنید. خروجی: `doc/adr/004-failure-privacy.md`.
+- [x] **ADR-001 — package identity and compatibility:** نام Composer (`bulkflow/laravel-bulkflow` مگر آن‌که مالک نام دیگری انتخاب کند)، namespace (`BulkFlow`)، حداقل PHP و Laravel matrix را ثبت کنید. خروجی: `doc/adr/001-package-identity.md`.
+- [x] **ADR-002 — spreadsheet adapter:** OpenSpout را با fixtureهای 10k و 100k ردیف در برابر نیازهای XLSX بررسی و به‌عنوان adapter اولیه تثبیت کنید. خروجی: `doc/adr/002-spreadsheet-adapter.md` و benchmark قابل تکرار.
+- [x] **ADR-003 — persistence semantics:** تفاوت `create`، `insert` و `upsert`، eventهای Eloquent، null handling و کلید idempotency را تعریف کنید. خروجی: `doc/adr/003-persistence-semantics.md`.
+- [x] **ADR-004 — stored failure privacy:** کلیدهای redact، retention و access control پیش‌فرض را تعیین کنید. خروجی: `doc/adr/004-failure-privacy.md`.
 
 ## Feature-by-feature review
 
@@ -57,7 +58,7 @@
 8. **Chunking:** iterator را به chunkهای bounded تقسیم و شمارش را به runner منتقل می‌کند. پایان کار: با 10k ردیف، peak memory با افزایش row count به‌صورت خطی رشد نمی‌کند.
 9. **Queue + batch:** definition snapshot به job serializable تبدیل می‌شود و batch state قابل query است. پایان کار: Queue fake همهٔ jobها و metadata را تأیید می‌کند.
 10. **Retry:** failure infrastructure و transient job errors با backoff Laravel retry می‌شوند. پایان کار: job idempotent با upsert دوبار اجرا شود و duplicate نسازد.
-11. **Memory benchmarks:** command benchmark و CI workflow شبانه. پایان کار: خروجی زمان/peak-memory برای fixtureها artifact می‌شود.
+11. **Memory benchmarks:** command benchmark محلی. پایان کار: خروجی زمان/peak-memory برای fixtureها ثبت می‌شود.
 
 ### V0.3 — Error System
 
@@ -84,7 +85,7 @@
 23. **Scheduled export:** schedule definition و notification. پایان کار: schedule fake job را dispatch می‌کند و artifact می‌نویسد.
 24. **History/retention:** cleanup command و audit fields. پایان کار: retention فقط runهای منقضی و مجاز را حذف می‌کند.
 25. **Permissions:** resolver contract و Laravel policy bridge. پایان کار: actor نمی‌تواند run/failure tenant دیگر را ببیند.
-26. **Release hardening:** docs/demo/CI/Packagist/NPM. پایان کار: release candidate از checkout تازه install و demo end-to-end اجرا می‌شود.
+26. **Release hardening:** docs/demo/Packagist/NPM. پایان کار: release candidate از checkout تازه install و demo end-to-end اجرا می‌شود.
 
 ## Milestone gates
 
@@ -99,4 +100,3 @@
 - public API، config key، migration یا event جدید در docs ثبت شده است.
 - errorها دارای کد/پیام قابل‌عمل و بدون PII ناخواسته هستند.
 - changelog و release note حاوی behavior change و migration note هستند.
-
