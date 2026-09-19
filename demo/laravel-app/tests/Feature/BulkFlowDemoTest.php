@@ -4,9 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use BulkFlow\Facades\BulkFlow;
+use BulkFlow\Queue\ProcessImport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class BulkFlowDemoTest extends TestCase
@@ -35,6 +38,48 @@ class BulkFlowDemoTest extends TestCase
         $this->postJson('/bulkflow/demo-imports/upload', [
             'file' => UploadedFile::fake()->createWithContent('users.txt', 'not supported'),
         ])->assertUnprocessable()->assertJsonValidationErrors('file');
+    }
+
+    public function test_starting_a_previewed_upload_queues_a_real_user_import(): void
+    {
+        Queue::fake();
+
+        $upload = $this->postJson('/bulkflow/demo-imports/upload', [
+            'file' => UploadedFile::fake()->createWithContent(
+                'users.csv',
+                "name,email,password\nNeda,neda@example.test,secret\n",
+            ),
+        ])->json();
+
+        $this->postJson('/bulkflow/demo-imports', [
+            'upload_id' => $upload['upload_id'],
+            'mapping' => ['name' => 'name', 'email' => 'email', 'password' => 'password'],
+        ])->assertCreated()->assertJsonPath('state', 'queued');
+
+        Queue::assertPushed(ProcessImport::class);
+    }
+
+    public function test_start_rejects_an_unknown_upload_token(): void
+    {
+        $this->postJson('/bulkflow/demo-imports', [
+            'upload_id' => (string) Str::uuid(),
+            'mapping' => ['name' => 'name', 'email' => 'email', 'password' => 'password'],
+        ])->assertUnprocessable()->assertJsonValidationErrors('upload_id');
+    }
+
+    public function test_start_rejects_duplicate_destination_mappings(): void
+    {
+        $upload = $this->postJson('/bulkflow/demo-imports/upload', [
+            'file' => UploadedFile::fake()->createWithContent(
+                'users.csv',
+                "first_name,email_address,password\nNeda,neda@example.test,secret\n",
+            ),
+        ])->json();
+
+        $this->postJson('/bulkflow/demo-imports', [
+            'upload_id' => $upload['upload_id'],
+            'mapping' => ['first_name' => 'email', 'email_address' => 'email', 'password' => 'password'],
+        ])->assertUnprocessable()->assertJsonValidationErrors('mapping');
     }
 
     public function test_it_imports_users_through_the_local_bulkflow_package(): void

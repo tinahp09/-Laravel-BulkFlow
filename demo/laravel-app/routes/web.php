@@ -10,4 +10,5 @@ Route::get('/', function () {
 
 Route::prefix('bulkflow')->withoutMiddleware([ValidateCsrfToken::class])->group(function (): void {
     Route::post('demo-imports/upload', [DemoImportController::class, 'upload']);
+    Route::post('demo-imports', [DemoImportController::class, 'start']);
 });
