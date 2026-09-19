@@ -16,6 +16,8 @@ return [
         'max_bytes' => 100 * 1024 * 1024,
     ],
     'profiles' => [],
+    'profile_authorize' => null,
+    'profile_actor_fingerprint' => null,
     'authorize' => null,
     'scope' => null,
     'notify' => null,
