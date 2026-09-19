@@ -12,6 +12,7 @@ final class ImportMappingTemplate extends Model
     use HasUuids;
 
     protected $table = 'bulkflow_import_mapping_templates';
+
     protected $guarded = [];
 
     protected function casts(): array

@@ -51,11 +51,38 @@ final class ImportMappingTemplateApiTest extends TestCase
 
 final class TemplateUsersProfile implements ImportProfile
 {
-    public function key(): string { return 'users'; }
-    public function label(): string { return 'Users'; }
-    public function modelClass(): string { return User::class; }
-    public function attributes(): array { return ['name', 'email']; }
-    public function rules(): array { return []; }
-    public function upsertBy(): array { return ['email']; }
-    public function defaultMapping(): array { return ['Email' => 'email']; }
+    public function key(): string
+    {
+        return 'users';
+    }
+
+    public function label(): string
+    {
+        return 'Users';
+    }
+
+    public function modelClass(): string
+    {
+        return User::class;
+    }
+
+    public function attributes(): array
+    {
+        return ['name', 'email'];
+    }
+
+    public function rules(): array
+    {
+        return [];
+    }
+
+    public function upsertBy(): array
+    {
+        return ['email'];
+    }
+
+    public function defaultMapping(): array
+    {
+        return ['Email' => 'email'];
+    }
 }

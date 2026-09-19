@@ -8,8 +8,9 @@ import {
   ImportProgressTracker,
   isTerminalImportState,
   type ImportRun,
+  type ImportProfile,
   type RowFailure,
-  type UploadPreview,
+  type ProfileUploadPreview,
 } from '@bulkflow/vue';
 
 const client = new BulkFlowClient('/bulkflow');
@@ -19,7 +20,9 @@ const failures = ref<RowFailure[]>([]);
 const failureStatus = ref<'pending' | 'resolved' | undefined>();
 const error = ref<string | null>(null);
 const loading = ref(false);
-const upload = ref<UploadPreview | null>(null);
+const upload = ref<ProfileUploadPreview | null>(null);
+const profiles = ref<ImportProfile[]>([]);
+const selectedProfileKey = ref('');
 const importBusy = ref(false);
 const importError = ref<string | null>(null);
 let stopPolling: (() => void) | undefined;
@@ -39,6 +42,17 @@ async function loadRuns(): Promise<void> {
     loading.value = false;
   }
 }
+
+async function loadProfiles(): Promise<void> {
+  try {
+    profiles.value = await client.listImportProfiles();
+    selectedProfileKey.value = profiles.value[0]?.key ?? '';
+  } catch (reason) {
+    importError.value = reason instanceof Error ? reason.message : 'Unable to load import profiles.';
+  }
+}
+
+const selectedProfile = computed(() => profiles.value.find((profile) => profile.key === selectedProfileKey.value));
 
 async function selectRun(run: ImportRun): Promise<void> {
   stopPolling?.();
@@ -103,11 +117,12 @@ async function cancelSelectedRun(): Promise<void> {
 }
 
 async function uploadFile(file: File): Promise<void> {
+  if (!selectedProfileKey.value) return;
   importBusy.value = true;
   importError.value = null;
 
   try {
-    upload.value = await client.uploadDemoImport(file);
+    upload.value = await client.uploadProfileImport(selectedProfileKey.value, file);
   } catch (reason) {
     importError.value = reason instanceof Error ? reason.message : 'Unable to preview import file.';
   } finally {
@@ -116,13 +131,13 @@ async function uploadFile(file: File): Promise<void> {
 }
 
 async function startImport(mapping: Record<string, string>): Promise<void> {
-  if (!upload.value) return;
+  if (!upload.value || !selectedProfileKey.value) return;
 
   importBusy.value = true;
   importError.value = null;
 
   try {
-    const run = await client.startDemoImport(upload.value.uploadId, mapping);
+    const run = await client.startProfileImport(selectedProfileKey.value, upload.value.uploadId, mapping);
     upload.value = null;
     await loadRuns();
     await selectRun(run);
@@ -133,7 +148,7 @@ async function startImport(mapping: Record<string, string>): Promise<void> {
   }
 }
 
-onMounted(loadRuns);
+onMounted(async () => { await Promise.all([loadRuns(), loadProfiles()]); });
 onBeforeUnmount(() => stopPolling?.());
 </script>
 
@@ -150,15 +165,19 @@ onBeforeUnmount(() => stopPolling?.());
 
     <p v-if="error" class="error" role="alert">{{ error }}</p>
 
-    <section class="import-panel" aria-label="Import users">
-      <h2>Import users</h2>
-      <p>Upload CSV or XLSX, map its columns, then queue a user import.</p>
+    <section class="import-panel" aria-label="Import data">
+      <h2>Import data</h2>
+      <p>Choose a registered profile, upload CSV or XLSX, map its columns, then queue an import.</p>
       <p v-if="importError" class="error" role="alert">{{ importError }}</p>
       <p v-if="importBusy">Preparing import…</p>
       <ImportWizard
         :headers="upload?.headers ?? []"
-        :destinations="['name', 'email', 'password']"
+        :destinations="selectedProfile?.attributes ?? []"
         :preview-rows="upload?.preview"
+        :profiles="profiles"
+        :selected-profile="selectedProfileKey"
+        :mapping-proposal="selectedProfile?.defaultMapping"
+        @profile-change="(key: string) => { selectedProfileKey = key; upload = null; }"
         @upload="uploadFile"
         @confirm="startImport"
       />

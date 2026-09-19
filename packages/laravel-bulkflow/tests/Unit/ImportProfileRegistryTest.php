@@ -17,7 +17,7 @@ final class ImportProfileRegistryTest extends TestCase
         $registry = new ImportProfileRegistry([new UsersProfile]);
 
         self::assertSame(['name', 'email'], $registry->find('users')->attributes());
-        self::assertSame(["Full name" => 'name', 'Email address' => 'email'], $registry->find('users')->defaultMapping());
+        self::assertSame(['Full name' => 'name', 'Email address' => 'email'], $registry->find('users')->defaultMapping());
     }
 
     public function test_it_rejects_duplicate_profile_keys(): void

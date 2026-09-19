@@ -117,6 +117,7 @@ final class ImportProfileController
     private function authorized(Request $request, ImportProfile $profile): bool
     {
         $authorizer = config('bulkflow.profile_authorize');
+
         return ! is_callable($authorizer) || (bool) $authorizer($request->user(), $profile);
     }
 
@@ -128,6 +129,7 @@ final class ImportProfileController
         }
 
         $actor = $request->user();
+
         return $actor === null ? 'guest' : 'actor:'.(string) $actor->getAuthIdentifier();
     }
 

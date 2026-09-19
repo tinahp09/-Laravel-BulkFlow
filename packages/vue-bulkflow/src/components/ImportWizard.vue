@@ -5,11 +5,15 @@ const props = defineProps<{
   headers: string[];
   destinations: string[];
   previewRows?: Array<Record<string, unknown>>;
+  profiles?: Array<{ key: string; label: string }>;
+  selectedProfile?: string;
+  mappingProposal?: Record<string, string>;
 }>();
 
 const emit = defineEmits<{
   upload: [file: File];
   confirm: [mapping: Record<string, string>];
+  'profile-change': [profileKey: string];
 }>();
 const mapping = ref<Record<string, string>>({});
 const step = ref(props.previewRows && props.previewRows.length > 0 ? 'preview' : 'mapping');
@@ -17,6 +21,7 @@ const step = ref(props.previewRows && props.previewRows.length > 0 ? 'preview' :
 watch(() => props.previewRows, (previewRows) => {
   if (previewRows && previewRows.length > 0) step.value = 'preview';
 });
+watch(() => props.mappingProposal, (proposal) => { mapping.value = { ...(proposal ?? {}) }; }, { immediate: true });
 
 function confirm(): void {
   const selected: Record<string, string> = {};
@@ -33,9 +38,20 @@ function selectFile(event: Event): void {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (file) emit('upload', file);
 }
+
+function selectProfile(event: Event): void {
+  emit('profile-change', (event.target as HTMLSelectElement).value);
+}
 </script>
 
 <template>
+  <label v-if="profiles">
+    Import profile
+    <select aria-label="Import profile" :value="selectedProfile" @change="selectProfile">
+      <option value="">Select a profile</option>
+      <option v-for="profile in profiles" :key="profile.key" :value="profile.key">{{ profile.label }}</option>
+    </select>
+  </label>
   <section v-if="headers.length === 0" aria-label="Import file selection">
     <label>
       Select CSV or XLSX file

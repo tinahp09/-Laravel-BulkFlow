@@ -9,6 +9,21 @@ composer require bulkflow/laravel-bulkflow
 php artisan migrate
 ```
 
+## Browser import profiles
+
+Register an immutable profile in your application configuration. The browser can only select these developer-defined models, rules and attributes.
+
+```php
+'profiles' => [App\Imports\UsersImportProfile::class],
+'profile_authorize' => fn ($actor, $profile) => true,
+```
+
+Each profile implements `BulkFlow\Import\Profiles\ImportProfile` and supplies a key, label, Eloquent model, allowed attributes, validation rules, upsert keys and default mapping. The package exposes `GET /bulkflow/import-profiles`, profile-scoped upload and dispatch endpoints, and consumes a short-lived upload token rather than a client-supplied path.
+
+Set `bulkflow.template_actor_id` to a stable actor identifier to enable private mapping-template endpoints. Without it, templates return 403 while code-provided default mappings remain available.
+
+The prior demo-only `/bulkflow/demo-imports` endpoints were replaced by `/bulkflow/import-profiles/{profile}/uploads` and `/bulkflow/import-profiles/{profile}/imports`.
+
 ## Import
 
 ```php

@@ -73,16 +73,46 @@ final class ImportProfileApiTest extends TestCase
 
 class ApiUsersProfile implements ImportProfile
 {
-    public function key(): string { return 'users'; }
-    public function label(): string { return 'Users'; }
-    public function modelClass(): string { return User::class; }
-    public function attributes(): array { return ['name', 'email']; }
-    public function rules(): array { return ['email' => ['required', 'email'], 'name' => ['required']]; }
-    public function upsertBy(): array { return ['email']; }
-    public function defaultMapping(): array { return ['Email' => 'email']; }
+    public function key(): string
+    {
+        return 'users';
+    }
+
+    public function label(): string
+    {
+        return 'Users';
+    }
+
+    public function modelClass(): string
+    {
+        return User::class;
+    }
+
+    public function attributes(): array
+    {
+        return ['name', 'email'];
+    }
+
+    public function rules(): array
+    {
+        return ['email' => ['required', 'email'], 'name' => ['required']];
+    }
+
+    public function upsertBy(): array
+    {
+        return ['email'];
+    }
+
+    public function defaultMapping(): array
+    {
+        return ['Email' => 'email'];
+    }
 }
 
 final class ApiOtherProfile extends ApiUsersProfile
 {
-    public function key(): string { return 'other'; }
+    public function key(): string
+    {
+        return 'other';
+    }
 }

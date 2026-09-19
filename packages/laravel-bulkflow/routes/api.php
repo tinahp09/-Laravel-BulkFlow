@@ -1,7 +1,7 @@
 <?php
 
-use BulkFlow\Http\Controllers\ImportRunController;
 use BulkFlow\Http\Controllers\ImportProfileController;
+use BulkFlow\Http\Controllers\ImportRunController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('bulkflow')->group(static function (): void {

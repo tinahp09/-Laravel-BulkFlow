@@ -24,6 +24,9 @@ export type UploadPreview = {
   headers: string[];
   preview: Array<Record<string, unknown>>;
 };
+export type ImportProfile = { key: string; label: string; attributes: string[]; defaultMapping: Record<string, string> };
+export type ImportMappingTemplate = { id: string; name: string; mapping: Record<string, string> };
+export type ProfileUploadPreview = UploadPreview;
 
 export type FailurePage = {
   data: RowFailure[];
@@ -87,6 +90,34 @@ export class BulkFlowClient {
     const payload = await response.json() as { upload_id: string; headers: string[]; preview: Array<Record<string, unknown>> };
 
     return { uploadId: payload.upload_id, headers: payload.headers, preview: payload.preview };
+  }
+
+  async listImportProfiles(): Promise<ImportProfile[]> {
+    const response = await this.fetcher(`${this.baseUrl}/import-profiles`, { headers: { Accept: 'application/json' } });
+    if (!response.ok) throw new Error(`Unable to load import profiles: ${response.status}`);
+    const payload = await response.json() as { data: Array<{ key: string; label: string; attributes: string[]; default_mapping: Record<string, string> }> };
+    return payload.data.map((profile) => ({ key: profile.key, label: profile.label, attributes: profile.attributes, defaultMapping: profile.default_mapping }));
+  }
+
+  async listMappingTemplates(profileKey: string): Promise<ImportMappingTemplate[]> {
+    const response = await this.fetcher(`${this.baseUrl}/import-profiles/${encodeURIComponent(profileKey)}/mapping-templates`, { headers: { Accept: 'application/json' } });
+    if (!response.ok) throw new Error(`Unable to load mapping templates: ${response.status}`);
+    return (await response.json() as { data: ImportMappingTemplate[] }).data;
+  }
+
+  async uploadProfileImport(profileKey: string, file: File): Promise<ProfileUploadPreview> {
+    const body = new FormData(); body.set('file', file);
+    const response = await this.fetcher(`${this.baseUrl}/import-profiles/${encodeURIComponent(profileKey)}/uploads`, { method: 'POST', headers: { Accept: 'application/json' }, body });
+    if (!response.ok) throw new Error(`Unable to upload import file: ${response.status}`);
+    const payload = await response.json() as { upload_id: string; headers: string[]; preview: Array<Record<string, unknown>> };
+    return { uploadId: payload.upload_id, headers: payload.headers, preview: payload.preview };
+  }
+
+  async startProfileImport(profileKey: string, uploadId: string, mapping: Record<string, string>): Promise<ImportRun> {
+    const response = await this.fetcher(`${this.baseUrl}/import-profiles/${encodeURIComponent(profileKey)}/imports`, { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify({ upload_id: uploadId, mapping }) });
+    if (!response.ok) throw new Error(`Unable to start import: ${response.status}`);
+    const payload = await response.json() as { id: string; state: string; processed_rows: number; total_rows: number; successful_rows?: number; failed_rows?: number; revision?: number };
+    return { id: payload.id, state: payload.state, processedRows: payload.processed_rows, totalRows: payload.total_rows, successfulRows: payload.successful_rows ?? 0, failedRows: payload.failed_rows ?? 0, revision: payload.revision ?? 0 };
   }
 
   async startDemoImport(uploadId: string, mapping: Record<string, string>): Promise<ImportRun> {

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Imports\UsersImportProfile;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -11,7 +12,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app['config']->set('bulkflow.profiles', [UsersImportProfile::class]);
     }
 
     /**
