@@ -5,12 +5,37 @@ namespace Tests\Feature;
 use App\Models\User;
 use BulkFlow\Facades\BulkFlow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class BulkFlowDemoTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_upload_preview_returns_an_opaque_token_headers_and_first_rows(): void
+    {
+        $response = $this->postJson('/bulkflow/demo-imports/upload', [
+            'file' => UploadedFile::fake()->createWithContent(
+                'users.csv',
+                "full_name,email_address,password\nNeda,neda@example.test,secret\n",
+            ),
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('headers', ['full_name', 'email_address', 'password'])
+            ->assertJsonPath('preview.0.email_address', 'neda@example.test')
+            ->assertJsonStructure(['upload_id']);
+
+        $this->assertStringNotContainsString(storage_path(), (string) $response->json('upload_id'));
+    }
+
+    public function test_upload_preview_rejects_an_unsupported_file(): void
+    {
+        $this->postJson('/bulkflow/demo-imports/upload', [
+            'file' => UploadedFile::fake()->createWithContent('users.txt', 'not supported'),
+        ])->assertUnprocessable()->assertJsonValidationErrors('file');
+    }
 
     public function test_it_imports_users_through_the_local_bulkflow_package(): void
     {
