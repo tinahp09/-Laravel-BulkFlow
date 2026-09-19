@@ -15,6 +15,7 @@ return [
         'allowed_extensions' => ['csv', 'xlsx'],
         'max_bytes' => 100 * 1024 * 1024,
     ],
+    'profiles' => [],
     'authorize' => null,
     'scope' => null,
     'notify' => null,

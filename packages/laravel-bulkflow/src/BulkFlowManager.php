@@ -11,15 +11,19 @@ use BulkFlow\Format\FileSource;
 use BulkFlow\Format\FormatRegistry;
 use BulkFlow\Format\XlsxReader;
 use BulkFlow\Import\ImportBuilder;
+use BulkFlow\Import\Profiles\ImportProfileRegistry;
 use BulkFlow\Schedule\ScheduledExportBuilder;
 use Illuminate\Database\Eloquent\Model;
 
 final class BulkFlowManager
 {
-    public function __construct(private readonly FormatRegistry $formats = new FormatRegistry([
-        'csv' => new CsvReader,
-        'xlsx' => new XlsxReader,
-    ])) {}
+    public function __construct(
+        private readonly FormatRegistry $formats = new FormatRegistry([
+            'csv' => new CsvReader,
+            'xlsx' => new XlsxReader,
+        ]),
+        private readonly ?ImportProfileRegistry $profiles = null,
+    ) {}
 
     /** @param class-string<Model> $modelClass */
     public function import(string $modelClass): ImportBuilder
@@ -42,5 +46,10 @@ final class BulkFlowManager
     public function readerFor(FileSource $source): Reader
     {
         return $this->formats->readerFor($source);
+    }
+
+    public function profiles(): ImportProfileRegistry
+    {
+        return $this->profiles ?? new ImportProfileRegistry;
     }
 }

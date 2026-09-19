@@ -6,6 +6,7 @@ namespace BulkFlow;
 
 use BulkFlow\Authorization\ImportRunChannelAuthorizer;
 use BulkFlow\Console\PruneRunsCommand;
+use BulkFlow\Import\Profiles\ImportProfileRegistry;
 use BulkFlow\Schedule\RunScheduledExports;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Broadcast;
@@ -17,7 +18,18 @@ final class BulkFlowServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/bulkflow.php', 'bulkflow');
 
-        $this->app->singleton(BulkFlowManager::class);
+        $this->app->singleton(ImportProfileRegistry::class, function (): ImportProfileRegistry {
+            $profiles = array_map(
+                fn (string $profileClass) => $this->app->make($profileClass),
+                config('bulkflow.profiles', []),
+            );
+
+            return new ImportProfileRegistry($profiles);
+        });
+
+        $this->app->singleton(BulkFlowManager::class, fn (): BulkFlowManager => new BulkFlowManager(
+            profiles: $this->app->make(ImportProfileRegistry::class),
+        ));
     }
 
     public function boot(): void
