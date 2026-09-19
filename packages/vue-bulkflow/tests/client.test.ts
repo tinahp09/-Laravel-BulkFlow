@@ -93,4 +93,32 @@ describe('BulkFlowClient', () => {
 
     expect(await client.listRuns()).toEqual([{ id: 'run-1', state: 'completed', processedRows: 3, totalRows: 3, successfulRows: 3, failedRows: 0, revision: 0 }]);
   });
+
+  it('uploads a selected file and returns its preview', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      upload_id: 'run-upload-1', headers: ['name'], preview: [{ name: 'Neda' }],
+    }), { status: 201 }));
+    const client = new BulkFlowClient('/bulkflow', fetcher);
+
+    expect(await client.uploadDemoImport(new File(['name\nNeda'], 'users.csv'))).toEqual({
+      uploadId: 'run-upload-1', headers: ['name'], preview: [{ name: 'Neda' }],
+    });
+    expect(fetcher.mock.calls[0][0]).toBe('/bulkflow/demo-imports/upload');
+    expect(fetcher.mock.calls[0][1].body).toBeInstanceOf(FormData);
+  });
+
+  it('starts a previewed import with its token and mapping', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      id: 'run-1', state: 'queued', processed_rows: 0, total_rows: 0, successful_rows: 0, failed_rows: 0,
+    }), { status: 201 }));
+
+    expect(await new BulkFlowClient('/bulkflow', fetcher).startDemoImport('upload-1', {
+      name: 'name', email: 'email', password: 'password',
+    })).toMatchObject({ id: 'run-1', state: 'queued' });
+    expect(fetcher).toHaveBeenCalledWith('/bulkflow/demo-imports', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ upload_id: 'upload-1', mapping: { name: 'name', email: 'email', password: 'password' } }),
+    });
+  });
 });

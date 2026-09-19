@@ -19,6 +19,12 @@ export type RowFailure = {
 
 export type RetryRun = { id: string; parentRunId: string; state: string };
 
+export type UploadPreview = {
+  uploadId: string;
+  headers: string[];
+  preview: Array<Record<string, unknown>>;
+};
+
 export type FailurePage = {
   data: RowFailure[];
   currentPage: number;
@@ -52,6 +58,50 @@ export class BulkFlowClient {
       successful_rows?: number;
       failed_rows?: number;
       revision?: number;
+    };
+
+    return {
+      id: payload.id,
+      state: payload.state,
+      processedRows: payload.processed_rows,
+      totalRows: payload.total_rows,
+      successfulRows: payload.successful_rows ?? 0,
+      failedRows: payload.failed_rows ?? 0,
+      revision: payload.revision ?? 0,
+    };
+  }
+
+  async uploadDemoImport(file: File): Promise<UploadPreview> {
+    const body = new FormData();
+    body.set('file', file);
+    const response = await this.fetcher(`${this.baseUrl}/demo-imports/upload`, {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      body,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Unable to upload import file: ${response.status}`);
+    }
+
+    const payload = await response.json() as { upload_id: string; headers: string[]; preview: Array<Record<string, unknown>> };
+
+    return { uploadId: payload.upload_id, headers: payload.headers, preview: payload.preview };
+  }
+
+  async startDemoImport(uploadId: string, mapping: Record<string, string>): Promise<ImportRun> {
+    const response = await this.fetcher(`${this.baseUrl}/demo-imports`, {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ upload_id: uploadId, mapping }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Unable to start import: ${response.status}`);
+    }
+
+    const payload = await response.json() as {
+      id: string; state: string; processed_rows: number; total_rows: number; successful_rows?: number; failed_rows?: number; revision?: number;
     };
 
     return {

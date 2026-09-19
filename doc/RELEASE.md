@@ -23,6 +23,11 @@ npm --workspace @bulkflow/vue run build
 composer test --working-dir=demo/laravel-app
 ```
 
+For the UI import flow, run the Laravel server, Vue server, and a queue worker;
+upload a CSV and XLSX through the browser. Confirm that a mapping to `name`,
+`email`, and `password` queues a User import, upserts by email, and renders
+validation failures in the Error Viewer.
+
 Also test a fresh Laravel application against the tagged Laravel package. Before
 tagging, `composer archive --format=zip` provides a local distribution smoke
 test; verify the archive excludes development dependencies and is installable

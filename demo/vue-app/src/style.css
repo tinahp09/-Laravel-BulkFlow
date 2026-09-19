@@ -13,5 +13,7 @@ aside, .details { background: #fff; border: 1px solid #dce3f1; border-radius: .7
 .run { display: block; margin-top: .5rem; width: 100%; text-align: left; background: #edf1ff; color: #14213d; }
 .run.selected { background: #274cde; color: #fff; }
 .error { padding: .75rem 1rem; background: #fff0f0; color: #a22020; border-radius: .5rem; }
+.import-panel { margin: 1.5rem 0; padding: 1.25rem; border: 1px solid #dce3f1; border-radius: .75rem; background: #fff; }
+.import-panel input, .import-panel select, .import-panel button { margin: .4rem 0; }
 .empty { color: #5a6475; }
 @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }

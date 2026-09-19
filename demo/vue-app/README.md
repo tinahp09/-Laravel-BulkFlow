@@ -15,5 +15,21 @@ Then run this app from the repository root:
 npm run dev:frontend
 ```
 
-Open `http://127.0.0.1:5174`. Create an import with the Laravel demo benchmark command,
-then refresh the import history here.
+In another terminal, process queued browser imports:
+
+```bash
+php demo/laravel-app/artisan queue:work
+```
+
+Open `http://127.0.0.1:5174`. Use **Import users** to select a CSV or XLSX,
+preview it, and map one source column each to `name`, `email`, and `password`.
+The demo imports only `User` records and upserts by email. For example:
+
+```csv
+name,email,password
+Neda,neda@example.test,change-me
+```
+
+After submission, the queued run is selected automatically. An invalid email is
+stored as a failed row and appears in the Error Viewer instead of failing the
+whole import.

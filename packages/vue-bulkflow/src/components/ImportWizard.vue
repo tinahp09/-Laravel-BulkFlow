@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 const props = defineProps<{
   headers: string[];
@@ -7,9 +7,16 @@ const props = defineProps<{
   previewRows?: Array<Record<string, unknown>>;
 }>();
 
-const emit = defineEmits<{ confirm: [mapping: Record<string, string>] }>();
+const emit = defineEmits<{
+  upload: [file: File];
+  confirm: [mapping: Record<string, string>];
+}>();
 const mapping = ref<Record<string, string>>({});
 const step = ref(props.previewRows && props.previewRows.length > 0 ? 'preview' : 'mapping');
+
+watch(() => props.previewRows, (previewRows) => {
+  if (previewRows && previewRows.length > 0) step.value = 'preview';
+});
 
 function confirm(): void {
   const selected: Record<string, string> = {};
@@ -21,10 +28,21 @@ function confirm(): void {
 
   emit('confirm', selected);
 }
+
+function selectFile(event: Event): void {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (file) emit('upload', file);
+}
 </script>
 
 <template>
-  <section v-if="step === 'preview'" aria-label="Import preview">
+  <section v-if="headers.length === 0" aria-label="Import file selection">
+    <label>
+      Select CSV or XLSX file
+      <input type="file" accept=".csv,.xlsx" @change="selectFile">
+    </label>
+  </section>
+  <section v-else-if="step === 'preview'" aria-label="Import preview">
     <p>Preview {{ previewRows?.length ?? 0 }} sample rows.</p>
     <table>
       <thead>

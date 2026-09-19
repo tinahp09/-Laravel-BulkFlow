@@ -9,6 +9,7 @@ import {
   isTerminalImportState,
   type ImportRun,
   type RowFailure,
+  type UploadPreview,
 } from '@bulkflow/vue';
 
 const client = new BulkFlowClient('/bulkflow');
@@ -18,6 +19,9 @@ const failures = ref<RowFailure[]>([]);
 const failureStatus = ref<'pending' | 'resolved' | undefined>();
 const error = ref<string | null>(null);
 const loading = ref(false);
+const upload = ref<UploadPreview | null>(null);
+const importBusy = ref(false);
+const importError = ref<string | null>(null);
 let stopPolling: (() => void) | undefined;
 
 const activeRunId = computed(() => selectedRun.value?.id ?? '');
@@ -98,6 +102,37 @@ async function cancelSelectedRun(): Promise<void> {
   }
 }
 
+async function uploadFile(file: File): Promise<void> {
+  importBusy.value = true;
+  importError.value = null;
+
+  try {
+    upload.value = await client.uploadDemoImport(file);
+  } catch (reason) {
+    importError.value = reason instanceof Error ? reason.message : 'Unable to preview import file.';
+  } finally {
+    importBusy.value = false;
+  }
+}
+
+async function startImport(mapping: Record<string, string>): Promise<void> {
+  if (!upload.value) return;
+
+  importBusy.value = true;
+  importError.value = null;
+
+  try {
+    const run = await client.startDemoImport(upload.value.uploadId, mapping);
+    upload.value = null;
+    await loadRuns();
+    await selectRun(run);
+  } catch (reason) {
+    importError.value = reason instanceof Error ? reason.message : 'Unable to start import.';
+  } finally {
+    importBusy.value = false;
+  }
+}
+
 onMounted(loadRuns);
 onBeforeUnmount(() => stopPolling?.());
 </script>
@@ -114,6 +149,20 @@ onBeforeUnmount(() => stopPolling?.());
     </header>
 
     <p v-if="error" class="error" role="alert">{{ error }}</p>
+
+    <section class="import-panel" aria-label="Import users">
+      <h2>Import users</h2>
+      <p>Upload CSV or XLSX, map its columns, then queue a user import.</p>
+      <p v-if="importError" class="error" role="alert">{{ importError }}</p>
+      <p v-if="importBusy">Preparing import…</p>
+      <ImportWizard
+        :headers="upload?.headers ?? []"
+        :destinations="['name', 'email', 'password']"
+        :preview-rows="upload?.preview"
+        @upload="uploadFile"
+        @confirm="startImport"
+      />
+    </section>
 
     <section class="grid">
       <aside>

@@ -1,7 +1,7 @@
 export const bulkFlowVuePackage = '@bulkflow/vue';
 
 export { BulkFlowClient } from './client';
-export type { FailurePage, ImportRun, RetryRun, RowFailure } from './client';
+export type { FailurePage, ImportRun, RetryRun, RowFailure, UploadPreview } from './client';
 export { ImportProgressTracker, isTerminalImportState, LaravelEchoProgressSource } from './progress';
 export type { ImportProgressSource, LaravelEcho } from './progress';
 export { default as ImportProgress } from './components/ImportProgress.vue';

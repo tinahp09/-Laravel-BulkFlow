@@ -30,11 +30,19 @@ php demo/laravel-app/artisan migrate
 php demo/laravel-app/artisan serve --host=127.0.0.1 --port=8011
 ```
 
+In a second terminal, start the worker that processes UI imports:
+
+```bash
+php demo/laravel-app/artisan queue:work
+```
+
 ```bash
 npm run dev:frontend
 ```
 
-Open `http://127.0.0.1:5174`. The frontend proxies its `/bulkflow` requests to the Laravel demo on port `8011`. Create a smoke-test run with:
+Open `http://127.0.0.1:5174`. The frontend proxies its `/bulkflow` requests to the Laravel demo on port `8011`. Use **Import users** to upload a CSV or XLSX with `name`, `email`, and `password` columns, preview the file, map those three attributes, and queue the import. Imports upsert by email and their progress and validation failures appear in the same UI.
+
+For a CLI smoke-test run instead:
 
 ```bash
 php demo/laravel-app/artisan bulkflow:benchmark-import --rows=1000 --chunk=100 --queued --sync

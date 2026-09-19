@@ -29,4 +29,18 @@ describe('ImportWizard', () => {
     await wrapper.get('button').trigger('click');
     expect(wrapper.get('form').exists()).toBe(true);
   });
+
+  it('emits a selected file before rendering the mapping controls', async () => {
+    const wrapper = mount(ImportWizard, {
+      props: { headers: [], destinations: ['name', 'email', 'password'] },
+    });
+
+    const input = wrapper.get('input[type="file"]');
+    const file = new File(['name\nNeda'], 'users.csv');
+    Object.defineProperty(input.element, 'files', { value: [file] });
+    await input.trigger('change');
+
+    expect(wrapper.emitted('upload')?.[0][0]).toBeInstanceOf(File);
+    expect(wrapper.find('form').exists()).toBe(false);
+  });
 });
