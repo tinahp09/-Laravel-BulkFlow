@@ -7,6 +7,7 @@ namespace BulkFlow\Http\Controllers;
 use BulkFlow\BulkFlowManager;
 use BulkFlow\Import\Profiles\ImportProfile;
 use BulkFlow\Import\Profiles\ImportProfileRegistry;
+use BulkFlow\Import\Profiles\MappingTemplateRepository;
 use BulkFlow\Import\Profiles\ProfileUploadStore;
 use BulkFlow\Run\ImportRun;
 use Illuminate\Http\JsonResponse;
@@ -66,6 +67,38 @@ final class ImportProfileController
         return response()->json($this->runPayload($run), 201);
     }
 
+    public function templates(string $profile, Request $request, ImportProfileRegistry $profiles, MappingTemplateRepository $templates): JsonResponse
+    {
+        $profile = $this->profile($request, $profiles, $profile);
+        $ownerId = $this->templateOwner($request);
+
+        return response()->json(['data' => array_map(
+            static fn ($template): array => ['id' => $template->id, 'name' => $template->name, 'mapping' => $template->mapping],
+            $templates->forOwner($profile->key(), $ownerId),
+        )]);
+    }
+
+    public function storeTemplate(string $profile, Request $request, ImportProfileRegistry $profiles, MappingTemplateRepository $templates): JsonResponse
+    {
+        $profile = $this->profile($request, $profiles, $profile);
+        $ownerId = $this->templateOwner($request);
+        $validated = $request->validate(['name' => ['required', 'string', 'max:100'], 'mapping' => ['required', 'array']]);
+        $mapping = $this->validateMapping($profile, $validated['mapping'], array_keys($validated['mapping']));
+        $template = $templates->create($profile->key(), $ownerId, $validated['name'], $mapping);
+
+        return response()->json(['id' => $template->id, 'name' => $template->name, 'mapping' => $template->mapping], 201);
+    }
+
+    public function deleteTemplate(string $profile, string $template, Request $request, ImportProfileRegistry $profiles, MappingTemplateRepository $templates): JsonResponse
+    {
+        $profile = $this->profile($request, $profiles, $profile);
+        if (! $templates->delete($profile->key(), $this->templateOwner($request), $template)) {
+            abort(404);
+        }
+
+        return response()->json(status: 204);
+    }
+
     private function profile(Request $request, ImportProfileRegistry $profiles, string $key): ImportProfile
     {
         try {
@@ -96,6 +129,21 @@ final class ImportProfileController
 
         $actor = $request->user();
         return $actor === null ? 'guest' : 'actor:'.(string) $actor->getAuthIdentifier();
+    }
+
+    private function templateOwner(Request $request): string
+    {
+        $resolver = config('bulkflow.template_actor_id');
+        if (! is_callable($resolver)) {
+            abort(403);
+        }
+
+        $ownerId = $resolver($request->user());
+        if (! is_string($ownerId) || $ownerId === '') {
+            abort(403);
+        }
+
+        return $ownerId;
     }
 
     /** @param array<string, mixed> $mapping @param list<string> $headers @return array<string, string> */

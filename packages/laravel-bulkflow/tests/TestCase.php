@@ -91,5 +91,14 @@ abstract class TestCase extends Orchestra
             $table->integer('created_at');
             $table->integer('finished_at')->nullable();
         });
+
+        Schema::create('bulkflow_import_mapping_templates', static function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('profile_key')->index();
+            $table->string('owner_id')->index();
+            $table->string('name');
+            $table->json('mapping');
+            $table->timestamps();
+        });
     }
 }

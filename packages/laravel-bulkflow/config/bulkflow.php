@@ -18,6 +18,7 @@ return [
     'profiles' => [],
     'profile_authorize' => null,
     'profile_actor_fingerprint' => null,
+    'template_actor_id' => null,
     'authorize' => null,
     'scope' => null,
     'notify' => null,
