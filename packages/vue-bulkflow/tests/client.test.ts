@@ -121,4 +121,23 @@ describe('BulkFlowClient', () => {
       body: JSON.stringify({ upload_id: 'upload-1', mapping: { name: 'name', email: 'email', password: 'password' } }),
     });
   });
+
+  it('loads, saves, and deletes profile mapping templates', async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [{ id: 'template-1', name: 'Vendor', mapping: { Email: 'email' } }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'template-2', name: 'ERP', mapping: { Mail: 'email' } }), { status: 201 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    const client = new BulkFlowClient('/bulkflow', fetcher);
+
+    expect(await client.listMappingTemplates('users')).toEqual([{ id: 'template-1', name: 'Vendor', mapping: { Email: 'email' } }]);
+    expect(await client.saveMappingTemplate('users', 'ERP', { Mail: 'email' })).toEqual({ id: 'template-2', name: 'ERP', mapping: { Mail: 'email' } });
+    await client.deleteMappingTemplate('users', 'template-2');
+
+    expect(fetcher).toHaveBeenNthCalledWith(2, '/bulkflow/import-profiles/users/mapping-templates', {
+      method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'ERP', mapping: { Mail: 'email' } }),
+    });
+    expect(fetcher).toHaveBeenNthCalledWith(3, '/bulkflow/import-profiles/users/mapping-templates/template-2', {
+      method: 'DELETE', headers: { Accept: 'application/json' },
+    });
+  });
 });

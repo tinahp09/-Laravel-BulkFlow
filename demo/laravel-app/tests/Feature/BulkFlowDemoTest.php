@@ -82,6 +82,19 @@ class BulkFlowDemoTest extends TestCase
         ])->assertUnprocessable()->assertJsonValidationErrors('mapping');
     }
 
+    public function test_demo_actor_can_save_and_list_private_mapping_templates(): void
+    {
+        $template = $this->postJson('/bulkflow/import-profiles/users/mapping-templates', [
+            'name' => 'Vendor users',
+            'mapping' => ['email_address' => 'email', 'full_name' => 'name', 'password' => 'password'],
+        ])->assertCreated()->json();
+
+        $this->getJson('/bulkflow/import-profiles/users/mapping-templates')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $template['id'])
+            ->assertJsonPath('data.0.name', 'Vendor users');
+    }
+
     public function test_it_imports_users_through_the_local_bulkflow_package(): void
     {
         $path = tempnam(sys_get_temp_dir(), 'bulkflow-demo-').'.csv';

@@ -105,6 +105,23 @@ export class BulkFlowClient {
     return (await response.json() as { data: ImportMappingTemplate[] }).data;
   }
 
+  async saveMappingTemplate(profileKey: string, name: string, mapping: Record<string, string>): Promise<ImportMappingTemplate> {
+    const response = await this.fetcher(`${this.baseUrl}/import-profiles/${encodeURIComponent(profileKey)}/mapping-templates`, {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, mapping }),
+    });
+    if (!response.ok) throw new Error(`Unable to save mapping template: ${response.status}`);
+    return await response.json() as ImportMappingTemplate;
+  }
+
+  async deleteMappingTemplate(profileKey: string, templateId: string): Promise<void> {
+    const response = await this.fetcher(`${this.baseUrl}/import-profiles/${encodeURIComponent(profileKey)}/mapping-templates/${encodeURIComponent(templateId)}`, {
+      method: 'DELETE', headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) throw new Error(`Unable to delete mapping template: ${response.status}`);
+  }
+
   async uploadProfileImport(profileKey: string, file: File): Promise<ProfileUploadPreview> {
     const body = new FormData(); body.set('file', file);
     const response = await this.fetcher(`${this.baseUrl}/import-profiles/${encodeURIComponent(profileKey)}/uploads`, { method: 'POST', headers: { Accept: 'application/json' }, body });

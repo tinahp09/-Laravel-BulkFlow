@@ -43,4 +43,19 @@ describe('ImportWizard', () => {
     expect(wrapper.emitted('upload')?.[0][0]).toBeInstanceOf(File);
     expect(wrapper.find('form').exists()).toBe(false);
   });
+
+  it('applies only current-file headers when a mapping template is selected', async () => {
+    const wrapper = mount(ImportWizard, {
+      props: {
+        headers: ['Email', 'Name'], destinations: ['email', 'name'],
+        templates: [{ id: 'vendor', name: 'Vendor export', mapping: { Email: 'email', Missing: 'name' } }],
+      },
+    });
+
+    await wrapper.get('[aria-label="Mapping template"]').setValue('vendor');
+    const selects = wrapper.findAll('select');
+    expect((selects[1].element as HTMLSelectElement).value).toBe('email');
+    expect((selects[2].element as HTMLSelectElement).value).toBe('');
+    expect(wrapper.get('[role="alert"]').text()).toContain('not present in this file');
+  });
 });

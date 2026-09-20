@@ -9,6 +9,7 @@ import {
   isTerminalImportState,
   type ImportRun,
   type ImportProfile,
+  type ImportMappingTemplate,
   type RowFailure,
   type ProfileUploadPreview,
 } from '@bulkflow/vue';
@@ -23,6 +24,8 @@ const loading = ref(false);
 const upload = ref<ProfileUploadPreview | null>(null);
 const profiles = ref<ImportProfile[]>([]);
 const selectedProfileKey = ref('');
+const templates = ref<ImportMappingTemplate[]>([]);
+const selectedTemplateId = ref('');
 const importBusy = ref(false);
 const importError = ref<string | null>(null);
 let stopPolling: (() => void) | undefined;
@@ -49,6 +52,19 @@ async function loadProfiles(): Promise<void> {
     selectedProfileKey.value = profiles.value[0]?.key ?? '';
   } catch (reason) {
     importError.value = reason instanceof Error ? reason.message : 'Unable to load import profiles.';
+  }
+}
+
+async function loadTemplates(): Promise<void> {
+  if (!selectedProfileKey.value) {
+    templates.value = [];
+    return;
+  }
+
+  try {
+    templates.value = await client.listMappingTemplates(selectedProfileKey.value);
+  } catch (reason) {
+    importError.value = reason instanceof Error ? reason.message : 'Unable to load mapping templates.';
   }
 }
 
@@ -148,7 +164,46 @@ async function startImport(mapping: Record<string, string>): Promise<void> {
   }
 }
 
-onMounted(async () => { await Promise.all([loadRuns(), loadProfiles()]); });
+async function changeProfile(profileKey: string): Promise<void> {
+  selectedProfileKey.value = profileKey;
+  selectedTemplateId.value = '';
+  upload.value = null;
+  await loadTemplates();
+}
+
+async function saveTemplate(name: string, mapping: Record<string, string>): Promise<void> {
+  if (!selectedProfileKey.value) return;
+  importBusy.value = true;
+  importError.value = null;
+
+  try {
+    const template = await client.saveMappingTemplate(selectedProfileKey.value, name, mapping);
+    await loadTemplates();
+    selectedTemplateId.value = template.id;
+  } catch (reason) {
+    importError.value = reason instanceof Error ? reason.message : 'Unable to save mapping template.';
+  } finally {
+    importBusy.value = false;
+  }
+}
+
+async function deleteTemplate(templateId: string): Promise<void> {
+  if (!selectedProfileKey.value) return;
+  importBusy.value = true;
+  importError.value = null;
+
+  try {
+    await client.deleteMappingTemplate(selectedProfileKey.value, templateId);
+    selectedTemplateId.value = '';
+    await loadTemplates();
+  } catch (reason) {
+    importError.value = reason instanceof Error ? reason.message : 'Unable to delete mapping template.';
+  } finally {
+    importBusy.value = false;
+  }
+}
+
+onMounted(async () => { await Promise.all([loadRuns(), loadProfiles()]); await loadTemplates(); });
 onBeforeUnmount(() => stopPolling?.());
 </script>
 
@@ -177,7 +232,12 @@ onBeforeUnmount(() => stopPolling?.());
         :profiles="profiles"
         :selected-profile="selectedProfileKey"
         :mapping-proposal="selectedProfile?.defaultMapping"
-        @profile-change="(key: string) => { selectedProfileKey = key; upload = null; }"
+        :templates="templates"
+        :selected-template-id="selectedTemplateId"
+        @profile-change="changeProfile"
+        @template-change="(templateId: string) => { selectedTemplateId = templateId; }"
+        @save-template="saveTemplate"
+        @delete-template="deleteTemplate"
         @upload="uploadFile"
         @confirm="startImport"
       />
