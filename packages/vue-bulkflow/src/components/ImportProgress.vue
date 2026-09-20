@@ -6,7 +6,9 @@ const props = defineProps<{
   failedRows: number;
 }>();
 
-const percentage = props.totalRows === 0 ? 0 : Math.min(100, Math.round((props.processedRows / props.totalRows) * 100));
+const totalRows = Number.isFinite(props.totalRows) && props.totalRows > 0 ? props.totalRows : 0;
+const processedRows = Number.isFinite(props.processedRows) && props.processedRows > 0 ? props.processedRows : 0;
+const percentage = totalRows === 0 ? 0 : Math.min(100, Math.round((processedRows / totalRows) * 100));
 </script>
 
 <template>

@@ -13,4 +13,13 @@ describe('ImportProgress', () => {
     expect(wrapper.text()).toContain('37 successful');
     expect(wrapper.text()).toContain('3 failed');
   });
+
+  it('renders zero percent while a queued import has no total row count yet', () => {
+    const wrapper = mount(ImportProgress, {
+      props: { processedRows: Number.NaN, totalRows: Number.NaN, successfulRows: 0, failedRows: 0 },
+    });
+
+    expect(wrapper.get('[role="progressbar"]').attributes('aria-valuenow')).toBe('0');
+    expect(wrapper.get('[role="progressbar"]').text()).toBe('0%');
+  });
 });

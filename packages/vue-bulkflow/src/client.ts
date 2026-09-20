@@ -66,8 +66,8 @@ export class BulkFlowClient {
     return {
       id: payload.id,
       state: payload.state,
-      processedRows: payload.processed_rows,
-      totalRows: payload.total_rows,
+      processedRows: payload.processed_rows ?? 0,
+      totalRows: payload.total_rows ?? 0,
       successfulRows: payload.successful_rows ?? 0,
       failedRows: payload.failed_rows ?? 0,
       revision: payload.revision ?? 0,
@@ -134,7 +134,7 @@ export class BulkFlowClient {
     const response = await this.fetcher(`${this.baseUrl}/import-profiles/${encodeURIComponent(profileKey)}/imports`, { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify({ upload_id: uploadId, mapping }) });
     if (!response.ok) throw new Error(`Unable to start import: ${response.status}`);
     const payload = await response.json() as { id: string; state: string; processed_rows: number; total_rows: number; successful_rows?: number; failed_rows?: number; revision?: number };
-    return { id: payload.id, state: payload.state, processedRows: payload.processed_rows, totalRows: payload.total_rows, successfulRows: payload.successful_rows ?? 0, failedRows: payload.failed_rows ?? 0, revision: payload.revision ?? 0 };
+    return { id: payload.id, state: payload.state, processedRows: payload.processed_rows ?? 0, totalRows: payload.total_rows ?? 0, successfulRows: payload.successful_rows ?? 0, failedRows: payload.failed_rows ?? 0, revision: payload.revision ?? 0 };
   }
 
   async startDemoImport(uploadId: string, mapping: Record<string, string>): Promise<ImportRun> {
@@ -271,8 +271,8 @@ export class BulkFlowClient {
     return payload.data.map((run) => ({
       id: run.id,
       state: run.state,
-      processedRows: run.processed_rows,
-      totalRows: run.total_rows,
+      processedRows: run.processed_rows ?? 0,
+      totalRows: run.total_rows ?? 0,
       successfulRows: run.successful_rows ?? 0,
       failedRows: run.failed_rows ?? 0,
       revision: run.revision ?? 0,
