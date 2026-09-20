@@ -6,6 +6,7 @@ import {
   ImportDashboard,
   ImportProgress,
   ImportProgressTracker,
+  ImportWizard,
   isTerminalImportState,
   type ImportRun,
   type ImportProfile,
