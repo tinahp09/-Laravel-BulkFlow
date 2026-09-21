@@ -59,6 +59,36 @@ class BulkFlowDemoTest extends TestCase
         Queue::assertPushed(ProcessImport::class);
     }
 
+    public function test_products_and_orders_are_registered_and_queue_through_profiles(): void
+    {
+        Queue::fake();
+
+        $this->getJson('/bulkflow/import-profiles')
+            ->assertOk()
+            ->assertJsonPath('data.1.key', 'products')
+            ->assertJsonPath('data.2.key', 'orders');
+
+        foreach ([
+            'products' => "product_sku,Product Name,Amount,stock\nSKU-1,Desk,199.95,4\n",
+            'orders' => "order_number,email_address,amount,status\nORD-1,neda@example.test,199.95,paid\n",
+        ] as $profile => $content) {
+            $upload = $this->postJson('/bulkflow/import-profiles/'.$profile.'/uploads', [
+                'file' => UploadedFile::fake()->createWithContent($profile.'.csv', $content),
+            ])->assertCreated()->json();
+
+            $mapping = $profile === 'products'
+                ? ['product_sku' => 'sku', 'Product Name' => 'name', 'Amount' => 'price', 'stock' => 'stock']
+                : ['order_number' => 'reference', 'email_address' => 'customer_email', 'amount' => 'total', 'status' => 'status'];
+
+            $this->postJson('/bulkflow/import-profiles/'.$profile.'/imports', [
+                'upload_id' => $upload['upload_id'],
+                'mapping' => $mapping,
+            ])->assertCreated()->assertJsonPath('state', 'queued');
+        }
+
+        Queue::assertPushed(ProcessImport::class, 2);
+    }
+
     public function test_start_rejects_an_unknown_upload_token(): void
     {
         $this->postJson('/bulkflow/import-profiles/users/imports', [

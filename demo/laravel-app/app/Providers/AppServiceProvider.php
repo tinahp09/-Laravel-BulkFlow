@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Imports\UsersImportProfile;
+use App\Imports\ProductsImportProfile;
+use App\Imports\OrdersImportProfile;
 use App\Support\DemoBulkFlowActor;
 use Illuminate\Support\ServiceProvider;
 
@@ -14,7 +16,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(DemoBulkFlowActor::class);
-        $this->app['config']->set('bulkflow.profiles', [UsersImportProfile::class]);
+        $this->app['config']->set('bulkflow.profiles', [UsersImportProfile::class, ProductsImportProfile::class, OrdersImportProfile::class]);
         $this->app['config']->set('bulkflow.profile_authorize', static fn (): bool => true);
         $this->app['config']->set('bulkflow.profile_actor_fingerprint', static fn (): string => app(DemoBulkFlowActor::class)->id());
         $this->app['config']->set('bulkflow.template_actor_id', static fn (): string => app(DemoBulkFlowActor::class)->id());
