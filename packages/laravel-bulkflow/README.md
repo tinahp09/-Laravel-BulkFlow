@@ -20,6 +20,8 @@ Register an immutable profile in your application configuration. The browser can
 
 Each profile implements `BulkFlow\Import\Profiles\ImportProfile` and supplies a key, label, Eloquent model, allowed attributes, validation rules, upsert keys and default mapping. The package exposes `GET /bulkflow/import-profiles`, profile-scoped upload and dispatch endpoints, and consumes a short-lived upload token rather than a client-supplied path.
 
+The companion Vue package can generate a safe mapping proposal from uploaded headings and the profile's allowed attributes. This is a UI convenience only: the profile remains the server-side authority, and operators can edit every proposed mapping before dispatch.
+
 Set `bulkflow.template_actor_id` to a stable actor identifier to enable private mapping-template endpoints. Without it, templates return 403 while code-provided default mappings remain available.
 
 The prior demo-only `/bulkflow/demo-imports` endpoints were replaced by `/bulkflow/import-profiles/{profile}/uploads` and `/bulkflow/import-profiles/{profile}/imports`.

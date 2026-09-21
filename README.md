@@ -42,6 +42,8 @@ npm run dev:frontend
 
 Open `http://127.0.0.1:5174`. The frontend proxies its `/bulkflow` requests to the Laravel demo on port `8011`. Choose the registered **Users** profile, upload a CSV or XLSX with `name`, `email`, and `password` columns, preview and map it, then queue the import. Imports upsert by email and their progress and validation failures appear in the same UI.
 
+The demo also includes **Products** (`sku`, `name`, `price`, `stock`) and **Orders** (`reference`, `customer_email`, `total`, `status`) profiles. Common vendor headings such as `product_sku`, `Product Name`, `order_number`, `email_address`, and `Amount` are proposed automatically; operators can always adjust the mapping before queueing.
+
 For a CLI smoke-test run instead:
 
 ```bash
