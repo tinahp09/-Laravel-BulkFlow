@@ -31,6 +31,8 @@ final class ProcessImportChunk implements ShouldQueue
 
     public int $tries;
 
+    public int $timeout;
+
     /** @var list<int> */
     public array $backoff;
 
@@ -43,6 +45,7 @@ final class ProcessImportChunk implements ShouldQueue
         $retry = RetryPolicy::fromConfig();
         $this->tries = $retry->tries;
         $this->backoff = $retry->backoff;
+        $this->timeout = $retry->timeout;
     }
 
     public function handle(): void

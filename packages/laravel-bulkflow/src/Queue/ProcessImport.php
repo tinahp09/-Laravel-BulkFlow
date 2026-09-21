@@ -28,6 +28,8 @@ final class ProcessImport implements ShouldQueue
 
     public int $tries;
 
+    public int $timeout;
+
     /** @var list<int> */
     public array $backoff;
 
@@ -36,6 +38,7 @@ final class ProcessImport implements ShouldQueue
         $retry = RetryPolicy::fromConfig();
         $this->tries = $retry->tries;
         $this->backoff = $retry->backoff;
+        $this->timeout = $retry->timeout;
     }
 
     public function handle(BulkFlowManager $bulkFlow): void

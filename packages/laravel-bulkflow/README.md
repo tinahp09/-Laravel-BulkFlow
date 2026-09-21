@@ -65,7 +65,7 @@ php artisan queue:work
 php artisan schedule:work
 ```
 
-Package migrations provision `job_batches` when it does not already exist. Configure queue retries through `bulkflow.queue.tries` and `bulkflow.queue.backoff`; the defaults are three attempts with 5- and 30-second delays. Use `upsertBy()` for queued imports so retrying a chunk does not create duplicates.
+Package migrations provision `job_batches` when it does not already exist. Configure each queue job through `bulkflow.queue.timeout`, `bulkflow.queue.tries`, and `bulkflow.queue.backoff`; the defaults are a 120-second timeout, three attempts, and 5- and 30-second delays. Use `upsertBy()` for queued imports so retrying a chunk does not create duplicates.
 
 For partial imports, use `->onError('continue')`, `->onError('fail-fast')`, or stop safely after a bounded number of bad rows:
 

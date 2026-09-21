@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'chunk_size' => 1_000,
     'queue' => [
+        'timeout' => 120,
         'tries' => 3,
         'backoff' => [5, 30],
     ],
