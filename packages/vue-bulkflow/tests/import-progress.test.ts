@@ -22,4 +22,15 @@ describe('ImportProgress', () => {
     expect(wrapper.get('[role="progressbar"]').attributes('aria-valuenow')).toBe('0');
     expect(wrapper.get('[role="progressbar"]').text()).toBe('0%');
   });
+
+  it('updates its percentage when queued progress receives row totals', async () => {
+    const wrapper = mount(ImportProgress, {
+      props: { processedRows: 0, totalRows: 0, successfulRows: 0, failedRows: 0 },
+    });
+
+    await wrapper.setProps({ processedRows: 1, totalRows: 1, successfulRows: 1 });
+
+    expect(wrapper.get('[role="progressbar"]').text()).toBe('100%');
+    expect(wrapper.text()).toContain('1 / 1 rows');
+  });
 });

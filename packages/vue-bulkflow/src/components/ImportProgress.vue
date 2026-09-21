@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+
 const props = defineProps<{
   processedRows: number;
   totalRows: number;
@@ -6,9 +8,17 @@ const props = defineProps<{
   failedRows: number;
 }>();
 
-const totalRows = Number.isFinite(props.totalRows) && props.totalRows > 0 ? props.totalRows : 0;
-const processedRows = Number.isFinite(props.processedRows) && props.processedRows > 0 ? props.processedRows : 0;
-const percentage = totalRows === 0 ? 0 : Math.min(100, Math.round((processedRows / totalRows) * 100));
+const totalRows = computed(() =>
+  Number.isFinite(props.totalRows) && props.totalRows > 0 ? props.totalRows : 0,
+);
+const processedRows = computed(() =>
+  Number.isFinite(props.processedRows) && props.processedRows > 0 ? props.processedRows : 0,
+);
+const percentage = computed(() =>
+  totalRows.value === 0
+    ? 0
+    : Math.min(100, Math.round((processedRows.value / totalRows.value) * 100)),
+);
 </script>
 
 <template>
