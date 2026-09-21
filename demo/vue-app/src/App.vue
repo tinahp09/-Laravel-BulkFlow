@@ -8,6 +8,7 @@ import {
   ImportProgressTracker,
   ImportWizard,
   isTerminalImportState,
+  proposeMapping,
   type ImportRun,
   type ImportProfile,
   type ImportMappingTemplate,
@@ -70,6 +71,13 @@ async function loadTemplates(): Promise<void> {
 }
 
 const selectedProfile = computed(() => profiles.value.find((profile) => profile.key === selectedProfileKey.value));
+const mappingProposal = computed(() => {
+  if (!selectedProfile.value) return {};
+
+  return upload.value
+    ? proposeMapping(upload.value.headers, selectedProfile.value)
+    : selectedProfile.value.defaultMapping;
+});
 
 async function selectRun(run: ImportRun): Promise<void> {
   stopPolling?.();
@@ -232,7 +240,7 @@ onBeforeUnmount(() => stopPolling?.());
         :preview-rows="upload?.preview"
         :profiles="profiles"
         :selected-profile="selectedProfileKey"
-        :mapping-proposal="selectedProfile?.defaultMapping"
+        :mapping-proposal="mappingProposal"
         :templates="templates"
         :selected-template-id="selectedTemplateId"
         @profile-change="changeProfile"
