@@ -12,6 +12,9 @@ return [
     'memory_guard' => [
         'threshold' => 0.95,
     ],
+    'failure' => [
+        'redacted_keys' => [],
+    ],
     'input' => [
         'allowed_extensions' => ['csv', 'xlsx'],
         'max_bytes' => 100 * 1024 * 1024,

@@ -60,6 +60,7 @@ final class ProcessImportChunk implements ShouldQueue
         $mapper = new RowMapper;
         $resolvedMapping = null;
         $validRows = [];
+        $stopRequested = false;
 
         foreach ($this->loadRows() as $record) {
             $sourceRow = new SourceRow($record['number'], $record['values']);
@@ -74,6 +75,11 @@ final class ProcessImportChunk implements ShouldQueue
                     $run = $runs->recordChunk($this->runId, 1, 0, 1);
                     $this->publishProgress($run);
 
+                    if ($this->shouldStop($run)) {
+                        $stopRequested = true;
+                        break;
+                    }
+
                     continue;
                 }
 
@@ -82,6 +88,11 @@ final class ProcessImportChunk implements ShouldQueue
                 $failures->record($this->runId, $sourceRow->number, 'persistence', ['row' => [$exception->getMessage()]], $sourceRow->values);
                 $run = $runs->recordChunk($this->runId, 1, 0, 1);
                 $this->publishProgress($run);
+
+                if ($this->shouldStop($run)) {
+                    $stopRequested = true;
+                    break;
+                }
             }
         }
 
@@ -100,12 +111,33 @@ final class ProcessImportChunk implements ShouldQueue
                         $failures->record($this->runId, $valid['sourceRow']->number, 'persistence', ['row' => [$exception->getMessage()]], $valid['sourceRow']->values);
                         $run = $runs->recordChunk($this->runId, 1, 0, 1);
                         $this->publishProgress($run);
+
+                        if ($this->shouldStop($run)) {
+                            $stopRequested = true;
+                            break;
+                        }
                     }
                 }
             }
         }
 
+        if ($stopRequested) {
+            $this->batch()?->cancel();
+            $runs->complete($this->runId);
+        }
+
         $this->deleteChunkFile();
+    }
+
+    private function shouldStop(ImportRun $run): bool
+    {
+        if ($this->definition->errorPolicy === 'fail-fast') {
+            return true;
+        }
+
+        return $this->definition->errorPolicy === 'stop-on-threshold'
+            && $this->definition->stopOnErrorCount !== null
+            && $run->failed_rows >= $this->definition->stopOnErrorCount;
     }
 
     /** @param array<string, mixed> $row */

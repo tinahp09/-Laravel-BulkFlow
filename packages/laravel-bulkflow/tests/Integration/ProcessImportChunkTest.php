@@ -84,4 +84,63 @@ final class ProcessImportChunkTest extends TestCase
         $run->refresh();
         self::assertSame(1, $run->successful_rows);
     }
+
+    public function test_fail_fast_stops_a_queued_chunk_after_its_first_failure(): void
+    {
+        $definition = new QueuedImportDefinition(
+            User::class,
+            '/unused.csv',
+            ['name' => 'name', 'email' => 'email'],
+            ['email' => ['required', 'email']],
+            ['email'],
+            3,
+            'fail-fast',
+            null,
+        );
+        $runs = new DatabaseRunRepository;
+        $run = $runs->createQueued($definition->jsonSerialize());
+        $runs->start($run->id);
+
+        [$job, $batch] = (new ProcessImportChunk($run->id, $definition, [
+            ['number' => 2, 'values' => ['name' => 'Broken', 'email' => 'not-an-email']],
+            ['number' => 3, 'values' => ['name' => 'Ignored', 'email' => 'ignored@example.test']],
+        ]))->withFakeBatch();
+        $job->handle();
+
+        $run->refresh();
+        self::assertSame('completed_with_errors', $run->state);
+        self::assertSame(1, $run->processed_rows);
+        self::assertSame(1, $run->failed_rows);
+        self::assertTrue($batch->cancelled());
+        self::assertDatabaseMissing('users', ['email' => 'ignored@example.test']);
+    }
+
+    public function test_stop_on_threshold_stops_a_queued_chunk_at_the_configured_failure_count(): void
+    {
+        $definition = new QueuedImportDefinition(
+            User::class,
+            '/unused.csv',
+            ['name' => 'name', 'email' => 'email'],
+            ['email' => ['required', 'email']],
+            ['email'],
+            4,
+            'stop-on-threshold',
+            2,
+        );
+        $runs = new DatabaseRunRepository;
+        $run = $runs->createQueued($definition->jsonSerialize());
+        $runs->start($run->id);
+
+        (new ProcessImportChunk($run->id, $definition, [
+            ['number' => 2, 'values' => ['name' => 'Broken', 'email' => 'not-an-email']],
+            ['number' => 3, 'values' => ['name' => 'Still broken', 'email' => 'still-not-an-email']],
+            ['number' => 4, 'values' => ['name' => 'Ignored', 'email' => 'ignored@example.test']],
+        ]))->handle();
+
+        $run->refresh();
+        self::assertSame('completed_with_errors', $run->state);
+        self::assertSame(2, $run->processed_rows);
+        self::assertSame(2, $run->failed_rows);
+        self::assertDatabaseMissing('users', ['email' => 'ignored@example.test']);
+    }
 }

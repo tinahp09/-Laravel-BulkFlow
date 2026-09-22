@@ -74,6 +74,8 @@ For partial imports, use `->onError('continue')`, `->onError('fail-fast')`, or s
 ->stopOnErrorCount(100)
 ```
 
+These policies apply to queued chunks too. `fail-fast` and `stop-on-threshold` cancel the remaining batch work after the triggering failure; already completed chunks remain part of the run summary. Failed-row payloads redact passwords, tokens, and secrets by default. Add application-specific keys with `bulkflow.failure.redacted_keys`.
+
 ## Export
 
 ```php

@@ -27,4 +27,21 @@ final class FailureRepositoryTest extends TestCase
         self::assertSame('[REDACTED]', $failure->payload['password']);
         self::assertSame(['The email must be valid.'], $failure->errors['email']);
     }
+
+    public function test_it_redacts_application_configured_payload_keys(): void
+    {
+        config()->set('bulkflow.failure.redacted_keys', ['api_key']);
+        $run = (new DatabaseRunRepository)->create();
+
+        $failure = (new DatabaseFailureRepository)->record(
+            $run->id,
+            rowNumber: 13,
+            type: 'validation',
+            errors: [],
+            payload: ['api_key' => 'private-value', 'email' => 'bad@example.test'],
+        );
+
+        self::assertSame('[REDACTED]', $failure->payload['api_key']);
+        self::assertSame('bad@example.test', $failure->payload['email']);
+    }
 }
