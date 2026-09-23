@@ -42,4 +42,24 @@ describe('ErrorViewer', () => {
 
     expect(wrapper.get('a[download]').attributes('href')).toBe('/bulkflow/imports/run-1/failures/report?format=csv');
   });
+
+  it('renders report formats and requests adjacent failure pages', async () => {
+    const wrapper = mount(ErrorViewer, {
+      props: {
+        runId: 'run-1',
+        failures: [],
+        reportUrl: '/bulkflow/imports/run-1/failures/report?format=csv',
+        xlsxReportUrl: '/bulkflow/imports/run-1/failures/report?format=xlsx',
+        currentPage: 2,
+        lastPage: 3,
+        totalFailures: 7,
+      },
+    });
+
+    expect(wrapper.text()).toContain('Page 2 of 3 · 7 failures');
+    expect(wrapper.get('[aria-label="Download XLSX failure report"]').attributes('href')).toContain('format=xlsx');
+    await wrapper.get('[aria-label="Next failure page"]').trigger('click');
+
+    expect(wrapper.emitted('page-change')).toEqual([[3]]);
+  });
 });

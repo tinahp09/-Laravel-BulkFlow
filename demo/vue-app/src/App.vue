@@ -21,6 +21,9 @@ const runs = ref<ImportRun[]>([]);
 const selectedRun = ref<ImportRun | null>(null);
 const failures = ref<RowFailure[]>([]);
 const failureStatus = ref<'pending' | 'resolved' | undefined>();
+const failureCurrentPage = ref(1);
+const failureLastPage = ref(1);
+const failureTotal = ref(0);
 const error = ref<string | null>(null);
 const loading = ref(false);
 const upload = ref<ProfileUploadPreview | null>(null);
@@ -33,7 +36,8 @@ const importError = ref<string | null>(null);
 let stopPolling: (() => void) | undefined;
 
 const activeRunId = computed(() => selectedRun.value?.id ?? '');
-const reportUrl = computed(() => selectedRun.value ? client.failureReportUrl(selectedRun.value.id) : undefined);
+const reportUrl = computed(() => selectedRun.value ? client.failureReportUrl(selectedRun.value.id, 'csv') : undefined);
+const xlsxReportUrl = computed(() => selectedRun.value ? client.failureReportUrl(selectedRun.value.id, 'xlsx') : undefined);
 
 async function loadRuns(): Promise<void> {
   loading.value = true;
@@ -79,7 +83,7 @@ const mappingProposal = computed(() => {
     : selectedProfile.value.defaultMapping;
 });
 
-async function selectRun(run: ImportRun): Promise<void> {
+async function selectRun(run: ImportRun, page = 1): Promise<void> {
   stopPolling?.();
   stopPolling = undefined;
   selectedRun.value = run;
@@ -87,12 +91,15 @@ async function selectRun(run: ImportRun): Promise<void> {
   const tracker = new ImportProgressTracker(client, run.id);
 
   try {
-    const [latestRun, failurePage] = await Promise.all([
+    const [latestRun, failureResult] = await Promise.all([
       tracker.refresh(),
-      client.getFailuresPage(run.id, { status: failureStatus.value }),
+      client.getFailuresPage(run.id, { page, status: failureStatus.value }),
     ]);
     selectedRun.value = latestRun;
-    failures.value = failurePage.data;
+    failures.value = failureResult.data;
+    failureCurrentPage.value = failureResult.currentPage;
+    failureLastPage.value = failureResult.lastPage;
+    failureTotal.value = failureResult.total;
 
     if (!isTerminalImportState(latestRun.state)) {
       stopPolling = tracker.poll(3_000, (updatedRun) => {
@@ -115,14 +122,18 @@ async function filterFailures(status: 'pending' | 'resolved' | undefined): Promi
   failureStatus.value = status;
 
   if (selectedRun.value) {
-    await selectRun(selectedRun.value);
+    await selectRun(selectedRun.value, 1);
   }
+}
+
+async function changeFailurePage(page: number): Promise<void> {
+  if (selectedRun.value) await selectRun(selectedRun.value, page);
 }
 
 async function retry(runId: string, failureIds?: string[]): Promise<void> {
   try {
     await client.retryFailures(runId, failureIds);
-    await Promise.all([loadRuns(), selectedRun.value ? selectRun(selectedRun.value) : Promise.resolve()]);
+    await Promise.all([loadRuns(), selectedRun.value ? selectRun(selectedRun.value, 1) : Promise.resolve()]);
   } catch (reason) {
     error.value = reason instanceof Error ? reason.message : 'Unable to retry failed rows.';
   }
@@ -279,7 +290,18 @@ onBeforeUnmount(() => stopPolling?.());
           :successful-rows="selectedRun.successfulRows"
           :failed-rows="selectedRun.failedRows"
         />
-        <ErrorViewer :run-id="selectedRun.id" :failures="failures" :report-url="reportUrl" @filter="filterFailures" @retry="retry" />
+        <ErrorViewer
+          :run-id="selectedRun.id"
+          :failures="failures"
+          :report-url="reportUrl"
+          :xlsx-report-url="xlsxReportUrl"
+          :current-page="failureCurrentPage"
+          :last-page="failureLastPage"
+          :total-failures="failureTotal"
+          @filter="filterFailures"
+          @page-change="changeFailurePage"
+          @retry="retry"
+        />
       </section>
       <section v-else class="details empty">
         Select an import to inspect its progress and errors.

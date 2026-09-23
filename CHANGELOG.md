@@ -2,6 +2,13 @@
 
 All notable changes to this monorepo are documented here.
 
+## Unreleased
+
+### Added
+
+- Error viewer pagination controls and separate CSV/XLSX failure-report links in the Vue demo.
+- Client-side mapping validation that requires every source column to map to a unique destination before an import can start.
+
 ## 1.0.0-rc.1
 
 ### Added

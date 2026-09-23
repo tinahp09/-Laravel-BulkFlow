@@ -23,6 +23,7 @@ const emit = defineEmits<{
 const mapping = ref<Record<string, string>>({});
 const templateName = ref('');
 const templateError = ref<string | null>(null);
+const mappingError = ref<string | null>(null);
 const step = ref(props.previewRows && props.previewRows.length > 0 ? 'preview' : 'mapping');
 
 watch(() => props.previewRows, (previewRows) => {
@@ -37,6 +38,20 @@ function confirm(): void {
     const destination = mapping.value[header];
     if (destination) selected[header] = destination;
   }
+
+  if (Object.keys(selected).length !== props.headers.length) {
+    mappingError.value = 'Map every source column before confirming.';
+
+    return;
+  }
+
+  if (new Set(Object.values(selected)).size !== props.headers.length) {
+    mappingError.value = 'Choose a unique destination for every source column.';
+
+    return;
+  }
+
+  mappingError.value = null;
 
   emit('confirm', selected);
 }
@@ -105,6 +120,7 @@ function saveTemplate(): void {
       </select>
     </label>
     <p v-if="templateError" role="alert">{{ templateError }}</p>
+    <p v-if="mappingError" role="alert">{{ mappingError }}</p>
     <label v-for="header in headers" :key="header">
       {{ header }}
       <select v-model="mapping[header]">

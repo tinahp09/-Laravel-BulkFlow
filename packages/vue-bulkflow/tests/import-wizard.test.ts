@@ -16,6 +16,25 @@ describe('ImportWizard', () => {
     expect(wrapper.emitted('confirm')).toEqual([[{ نام: 'name', ایمیل: 'email' }]]);
   });
 
+  it('prevents confirmation until every header has a unique destination', async () => {
+    const wrapper = mount(ImportWizard, {
+      props: { headers: ['Name', 'Email'], destinations: ['name', 'email'] },
+    });
+
+    const selects = wrapper.findAll('select');
+    await selects[0].setValue('name');
+    await wrapper.get('form').trigger('submit');
+
+    expect(wrapper.emitted('confirm')).toBeUndefined();
+    expect(wrapper.get('[role="alert"]').text()).toContain('Map every source column');
+
+    await selects[1].setValue('name');
+    await wrapper.get('form').trigger('submit');
+
+    expect(wrapper.emitted('confirm')).toBeUndefined();
+    expect(wrapper.get('[role="alert"]').text()).toContain('unique destination');
+  });
+
   it('shows a sample preview before mapping when preview rows are provided', async () => {
     const wrapper = mount(ImportWizard, {
       props: {

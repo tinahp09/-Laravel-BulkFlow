@@ -31,7 +31,7 @@ With no selected IDs, `retryFailures(runId)` preserves the backend default of re
 
 `ErrorViewer` emits `filter` with `pending`, `resolved`, or `undefined` when its status selector changes. Load the corresponding page through `client.getFailuresPage(runId, { status })` and pass its `data` back to the component.
 
-For a server-side CSV/XLSX report, use `client.failureReportUrl(runId, 'csv')` (or `'xlsx'`) and pass it to `ErrorViewer` as `report-url`; the component renders a standard download link.
+For server-side reports, pass `client.failureReportUrl(runId, 'csv')` as `report-url` and `client.failureReportUrl(runId, 'xlsx')` as `xlsx-report-url`; the component renders standard download links. When `getFailuresPage()` returns more than one page, also pass `current-page`, `last-page`, and `total-failures`, then reload data in response to the component's `page-change` event.
 
 ## Cancel an active import
 
