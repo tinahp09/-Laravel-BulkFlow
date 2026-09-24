@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace BulkFlow\Import;
 
-use BulkFlow\Events\ImportProgressUpdated;
 use BulkFlow\Failure\DatabaseFailureRepository;
 use BulkFlow\Format\FormatRegistry;
 use BulkFlow\Format\ReadOptions;
 use BulkFlow\Import\Pipeline\HeaderResolver;
 use BulkFlow\Import\Pipeline\RowMapper;
 use BulkFlow\Import\Pipeline\RowValidator;
+use BulkFlow\Progress\ProgressPublisher;
+use BulkFlow\Progress\ProgressSnapshot;
 use BulkFlow\Run\DatabaseRunRepository;
 use Illuminate\Contracts\Validation\Factory;
 use Throwable;
@@ -63,7 +64,7 @@ final class SyncImportRunner
                     $failures[] = new RowFailure($sourceRow->number, 'validation', $errors);
                     $failureRepository->record($run->id, $sourceRow->number, 'validation', $errors, $row);
                     $updatedRun = $runRepository->recordChunk($run->id, 1, 0, 1);
-                    event(ImportProgressUpdated::fromRun($updatedRun));
+                    app(ProgressPublisher::class)->publish(ProgressSnapshot::fromRun($updatedRun));
 
                     if ($this->shouldStop($definition, count($failures))) {
                         break;
@@ -75,13 +76,13 @@ final class SyncImportRunner
                 $this->persist($definition, $row);
                 $successful++;
                 $updatedRun = $runRepository->recordChunk($run->id, 1, 1, 0);
-                event(ImportProgressUpdated::fromRun($updatedRun));
+                app(ProgressPublisher::class)->publish(ProgressSnapshot::fromRun($updatedRun));
             } catch (Throwable $exception) {
                 $errors = ['row' => [$exception->getMessage()]];
                 $failures[] = new RowFailure($sourceRow->number, 'persistence', $errors);
                 $failureRepository->record($run->id, $sourceRow->number, 'persistence', $errors, $sourceRow->values);
                 $updatedRun = $runRepository->recordChunk($run->id, 1, 0, 1);
-                event(ImportProgressUpdated::fromRun($updatedRun));
+                app(ProgressPublisher::class)->publish(ProgressSnapshot::fromRun($updatedRun));
 
                 if ($this->shouldStop($definition, count($failures))) {
                     break;
@@ -89,8 +90,10 @@ final class SyncImportRunner
             }
         }
 
-        $runRepository->setTotalRows($run->id, $total);
-        $runRepository->complete($run->id);
+        $totalsUpdatedRun = $runRepository->setTotalRows($run->id, $total);
+        app(ProgressPublisher::class)->publish(ProgressSnapshot::fromRun($totalsUpdatedRun));
+        $completedRun = $runRepository->complete($run->id);
+        app(ProgressPublisher::class)->publish(ProgressSnapshot::fromRun($completedRun));
 
         return new ImportResult($run->id, $total, $successful, count($failures), 0, $chunksProcessed, $failures);
     }

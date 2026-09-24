@@ -36,6 +36,14 @@ export type FailurePage = {
   total: number;
 };
 
+export type RunPage = {
+  data: ImportRun[];
+  currentPage: number;
+  lastPage: number;
+  perPage: number;
+  total: number;
+};
+
 type Fetcher = typeof fetch;
 
 export class BulkFlowClient {
@@ -261,14 +269,19 @@ export class BulkFlowClient {
     return `${this.baseUrl}/imports/${encodeURIComponent(runId)}/failures/report?format=${format}`;
   }
 
-  async listRuns(): Promise<ImportRun[]> {
-    const response = await this.fetcher(`${this.baseUrl}/imports`, { headers: { Accept: 'application/json' } });
+  async listRunsPage(options: { page?: number; perPage?: number; state?: string } = {}): Promise<RunPage> {
+    const query = new URLSearchParams();
+    if (options.page !== undefined) query.set('page', String(options.page));
+    if (options.perPage !== undefined) query.set('per_page', String(options.perPage));
+    if (options.state !== undefined) query.set('state', options.state);
+    const suffix = query.size === 0 ? '' : `?${query.toString()}`;
+    const response = await this.fetcher(`${this.baseUrl}/imports${suffix}`, { headers: { Accept: 'application/json' } });
     if (!response.ok) throw new Error(`Unable to load import history: ${response.status}`);
 
     const payload = await response.json() as { data: Array<{
       id: string; state: string; processed_rows: number; total_rows: number; successful_rows?: number; failed_rows?: number; revision?: number;
-    }> };
-    return payload.data.map((run) => ({
+    }>; meta?: { current_page: number; last_page: number; per_page: number; total: number } };
+    const data = payload.data.map((run) => ({
       id: run.id,
       state: run.state,
       processedRows: run.processed_rows ?? 0,
@@ -277,5 +290,17 @@ export class BulkFlowClient {
       failedRows: run.failed_rows ?? 0,
       revision: run.revision ?? 0,
     }));
+
+    return {
+      data,
+      currentPage: payload.meta?.current_page ?? 1,
+      lastPage: payload.meta?.last_page ?? 1,
+      perPage: payload.meta?.per_page ?? data.length,
+      total: payload.meta?.total ?? data.length,
+    };
+  }
+
+  async listRuns(): Promise<ImportRun[]> {
+    return (await this.listRunsPage()).data;
   }
 }

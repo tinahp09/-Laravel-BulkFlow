@@ -7,6 +7,8 @@ namespace BulkFlow\Queue;
 use BulkFlow\BulkFlowManager;
 use BulkFlow\Format\FileSource;
 use BulkFlow\Format\ReadOptions;
+use BulkFlow\Progress\ProgressPublisher;
+use BulkFlow\Progress\ProgressSnapshot;
 use BulkFlow\Run\DatabaseRunRepository;
 use BulkFlow\Run\ImportRun;
 use BulkFlow\Support\MemoryGuard;
@@ -61,7 +63,8 @@ final class ProcessImport implements ShouldQueue
             $totalRows = $this->spoolReaderChunks($bulkFlow, $source, $jobs);
         }
 
-        $runs->setTotalRows($this->runId, $totalRows);
+        $totalsUpdatedRun = $runs->setTotalRows($this->runId, $totalRows);
+        app(ProgressPublisher::class)->publish(ProgressSnapshot::fromRun($totalsUpdatedRun));
 
         if (ImportRun::query()->whereKey($this->runId)->value('state') === 'cancelled') {
             @rmdir($chunkDirectory);
@@ -70,7 +73,8 @@ final class ProcessImport implements ShouldQueue
         }
 
         if ($jobs === []) {
-            $runs->complete($this->runId);
+            $completedRun = $runs->complete($this->runId);
+            app(ProgressPublisher::class)->publish(ProgressSnapshot::fromRun($completedRun));
 
             return;
         }
@@ -80,11 +84,14 @@ final class ProcessImport implements ShouldQueue
         $batch = Bus::batch($jobs)
             ->name('BulkFlow import '.$runId)
             ->then(static function (Batch $batch) use ($runId, $chunkDirectory): void {
-                (new DatabaseRunRepository)->complete($runId);
+                $completedRun = (new DatabaseRunRepository)->complete($runId);
+                app(ProgressPublisher::class)->publish(ProgressSnapshot::fromRun($completedRun));
                 @rmdir($chunkDirectory);
             })
             ->catch(static function (Batch $batch, Throwable $exception) use ($runId): void {
                 (new DatabaseRunRepository)->fail($runId);
+                $failedRun = ImportRun::query()->findOrFail($runId);
+                app(ProgressPublisher::class)->publish(ProgressSnapshot::fromRun($failedRun));
             })
             ->dispatch();
 

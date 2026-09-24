@@ -7,6 +7,9 @@ namespace BulkFlow;
 use BulkFlow\Authorization\ImportRunChannelAuthorizer;
 use BulkFlow\Console\PruneRunsCommand;
 use BulkFlow\Import\Profiles\ImportProfileRegistry;
+use BulkFlow\Progress\BroadcastProgressPublisher;
+use BulkFlow\Progress\NullProgressPublisher;
+use BulkFlow\Progress\ProgressPublisher;
 use BulkFlow\Schedule\RunScheduledExports;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Broadcast;
@@ -30,6 +33,10 @@ final class BulkFlowServiceProvider extends ServiceProvider
         $this->app->singleton(BulkFlowManager::class, fn (): BulkFlowManager => new BulkFlowManager(
             profiles: $this->app->make(ImportProfileRegistry::class),
         ));
+
+        $this->app->singleton(ProgressPublisher::class, fn (): ProgressPublisher => config('bulkflow.progress.publisher') === 'null'
+            ? new NullProgressPublisher
+            : new BroadcastProgressPublisher);
     }
 
     public function boot(): void

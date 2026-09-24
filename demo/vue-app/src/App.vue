@@ -7,6 +7,7 @@ import {
   ImportProgress,
   ImportProgressTracker,
   ImportWizard,
+  LaravelEchoProgressSource,
   isTerminalImportState,
   proposeMapping,
   type ImportRun,
@@ -14,10 +15,15 @@ import {
   type ImportMappingTemplate,
   type RowFailure,
   type ProfileUploadPreview,
+  type LaravelEcho,
 } from '@bulkflow/vue';
 
 const client = new BulkFlowClient('/bulkflow');
 const runs = ref<ImportRun[]>([]);
+const runCurrentPage = ref(1);
+const runLastPage = ref(1);
+const runTotal = ref(0);
+const runState = ref<string | undefined>();
 const selectedRun = ref<ImportRun | null>(null);
 const failures = ref<RowFailure[]>([]);
 const failureStatus = ref<'pending' | 'resolved' | undefined>();
@@ -39,17 +45,41 @@ const activeRunId = computed(() => selectedRun.value?.id ?? '');
 const reportUrl = computed(() => selectedRun.value ? client.failureReportUrl(selectedRun.value.id, 'csv') : undefined);
 const xlsxReportUrl = computed(() => selectedRun.value ? client.failureReportUrl(selectedRun.value.id, 'xlsx') : undefined);
 
-async function loadRuns(): Promise<void> {
+function realtimeProgressSource(): LaravelEchoProgressSource | undefined {
+  const echo = (window as Window & { Echo?: LaravelEcho }).Echo;
+
+  return echo ? new LaravelEchoProgressSource(echo) : undefined;
+}
+
+async function loadRuns(page = 1): Promise<void> {
   loading.value = true;
   error.value = null;
 
   try {
-    runs.value = await client.listRuns();
+    const result = await client.listRunsPage({ page, state: runState.value });
+    runs.value = result.data;
+    runCurrentPage.value = result.currentPage;
+    runLastPage.value = result.lastPage;
+    runTotal.value = result.total;
   } catch (reason) {
     error.value = reason instanceof Error ? reason.message : 'Unable to load import history.';
   } finally {
     loading.value = false;
   }
+}
+
+async function filterRuns(state: string | undefined): Promise<void> {
+  runState.value = state;
+  await loadRuns(1);
+}
+
+async function changeRunPage(page: number): Promise<void> {
+  await loadRuns(page);
+}
+
+async function selectDashboardRun(runId: string): Promise<void> {
+  const run = runs.value.find((candidate) => candidate.id === runId);
+  if (run) await selectRun(run);
 }
 
 async function loadProfiles(): Promise<void> {
@@ -91,28 +121,31 @@ async function selectRun(run: ImportRun, page = 1): Promise<void> {
   const tracker = new ImportProgressTracker(client, run.id);
 
   try {
-    const [latestRun, failureResult] = await Promise.all([
-      tracker.refresh(),
+    const [release, failureResult] = await Promise.all([
+      tracker.track({
+        source: realtimeProgressSource(),
+        pollIntervalMs: 3_000,
+        onUpdate: (updatedRun) => {
+          selectedRun.value = updatedRun;
+
+          if (isTerminalImportState(updatedRun.state)) {
+            stopPolling?.();
+            stopPolling = undefined;
+          }
+        },
+        onError: (reason) => {
+          error.value = reason instanceof Error ? reason.message : 'Unable to refresh import progress.';
+        },
+      }),
       client.getFailuresPage(run.id, { page, status: failureStatus.value }),
     ]);
-    selectedRun.value = latestRun;
+    stopPolling = release;
+    selectedRun.value = tracker.current;
     failures.value = failureResult.data;
     failureCurrentPage.value = failureResult.currentPage;
     failureLastPage.value = failureResult.lastPage;
     failureTotal.value = failureResult.total;
 
-    if (!isTerminalImportState(latestRun.state)) {
-      stopPolling = tracker.poll(3_000, (updatedRun) => {
-        selectedRun.value = updatedRun;
-
-        if (isTerminalImportState(updatedRun.state)) {
-          stopPolling?.();
-          stopPolling = undefined;
-        }
-      }, (reason) => {
-        error.value = reason instanceof Error ? reason.message : 'Unable to refresh import progress.';
-      });
-    }
   } catch (reason) {
     error.value = reason instanceof Error ? reason.message : 'Unable to load import details.';
   }
@@ -233,7 +266,7 @@ onBeforeUnmount(() => stopPolling?.());
       <p class="eyebrow">Laravel + Vue reference application</p>
       <h1>BulkFlow demo</h1>
       <p>Inspect completed imports, their progress, and selected failed-row retries.</p>
-      <button type="button" :disabled="loading" @click="loadRuns">
+      <button type="button" :disabled="loading" @click="() => loadRuns()">
         {{ loading ? 'Refreshing…' : 'Refresh imports' }}
       </button>
     </header>
@@ -266,17 +299,15 @@ onBeforeUnmount(() => stopPolling?.());
     <section class="grid">
       <aside>
         <h2>Import history</h2>
-        <ImportDashboard :runs="runs" />
-        <button
-          v-for="run in runs"
-          :key="run.id"
-          class="run"
-          :class="{ selected: run.id === activeRunId }"
-          type="button"
-          @click="selectRun(run)"
-        >
-          View {{ run.id.slice(0, 8) }}
-        </button>
+        <ImportDashboard
+          :runs="runs"
+          :current-page="runCurrentPage"
+          :last-page="runLastPage"
+          :total-runs="runTotal"
+          @filter="filterRuns"
+          @page-change="changeRunPage"
+          @select="selectDashboardRun"
+        />
       </aside>
 
       <section v-if="selectedRun" class="details">

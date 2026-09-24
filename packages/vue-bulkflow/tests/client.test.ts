@@ -94,6 +94,17 @@ describe('BulkFlowClient', () => {
     expect(await client.listRuns()).toEqual([{ id: 'run-1', state: 'completed', processedRows: 3, totalRows: 3, successfulRows: 3, failedRows: 0, revision: 0 }]);
   });
 
+  it('loads a filtered dashboard page with server-provided metadata', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      data: [{ id: 'run-2', state: 'queued', processed_rows: 0, total_rows: 10, successful_rows: 0, failed_rows: 0, revision: 1 }],
+      meta: { current_page: 2, last_page: 3, per_page: 1, total: 3 },
+    }), { status: 200 }));
+    const client = new BulkFlowClient('/bulkflow', fetcher);
+
+    await expect(client.listRunsPage({ page: 2, perPage: 1, state: 'queued' })).resolves.toMatchObject({ currentPage: 2, lastPage: 3, total: 3 });
+    expect(fetcher).toHaveBeenCalledWith('/bulkflow/imports?page=2&per_page=1&state=queued', { headers: { Accept: 'application/json' } });
+  });
+
   it('uploads a selected file and returns its preview', async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       upload_id: 'run-upload-1', headers: ['name'], preview: [{ name: 'Neda' }],

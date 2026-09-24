@@ -95,4 +95,50 @@ describe('ImportProgressTracker', () => {
     disconnect();
     expect(leave).toHaveBeenCalledWith('bulkflow.imports.run-1');
   });
+
+  it('loads first, accepts newer realtime progress, and falls back to polling after a transport disconnect', async () => {
+    vi.useFakeTimers();
+    const client = { getRun: vi.fn()
+      .mockResolvedValueOnce({ id: 'run-1', state: 'processing', processedRows: 10, totalRows: 100, successfulRows: 10, failedRows: 0, revision: 1 })
+      .mockResolvedValueOnce({ id: 'run-1', state: 'processing', processedRows: 30, totalRows: 100, successfulRows: 29, failedRows: 1, revision: 3 }) } as unknown as BulkFlowClient;
+    const tracker = new ImportProgressTracker(client, 'run-1');
+    const updates: number[] = [];
+
+    const stop = await tracker.track({
+      source: {
+        subscribe: (_runId, onProgress, onDisconnect) => {
+          onProgress({ id: 'run-1', state: 'processing', processedRows: 20, totalRows: 100, successfulRows: 20, failedRows: 0, revision: 2 });
+          onProgress({ id: 'run-1', state: 'processing', processedRows: 5, totalRows: 100, successfulRows: 5, failedRows: 0, revision: 1 });
+          onDisconnect?.();
+
+          return () => undefined;
+        },
+      },
+      pollIntervalMs: 1_000,
+      onUpdate: (run) => updates.push(run.revision),
+    });
+
+    expect(tracker.current?.revision).toBe(2);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(tracker.current?.revision).toBe(3);
+    expect(updates).toEqual([1, 2, 3]);
+    stop();
+    vi.useRealTimers();
+  });
+
+  it('does not subscribe or poll when the initial snapshot is terminal', async () => {
+    vi.useFakeTimers();
+    const client = { getRun: vi.fn().mockResolvedValue({
+      id: 'run-1', state: 'completed', processedRows: 1, totalRows: 1, successfulRows: 1, failedRows: 0, revision: 3,
+    }) } as unknown as BulkFlowClient;
+    const subscribe = vi.fn();
+    const tracker = new ImportProgressTracker(client, 'run-1');
+
+    await tracker.track({ source: { subscribe }, pollIntervalMs: 1_000 });
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(subscribe).not.toHaveBeenCalled();
+    expect(client.getRun).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
 });

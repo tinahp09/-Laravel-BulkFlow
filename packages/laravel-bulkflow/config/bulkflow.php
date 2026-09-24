@@ -12,6 +12,10 @@ return [
     'memory_guard' => [
         'threshold' => 0.95,
     ],
+    'progress' => [
+        // Set to "null" when the host application does not configure broadcasting.
+        'publisher' => 'broadcast',
+    ],
     'failure' => [
         'redacted_keys' => [],
     ],

@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace BulkFlow\Queue;
 
-use BulkFlow\Events\ImportProgressUpdated;
 use BulkFlow\Failure\DatabaseFailureRepository;
 use BulkFlow\Import\Pipeline\HeaderResolver;
 use BulkFlow\Import\Pipeline\RowMapper;
 use BulkFlow\Import\Pipeline\RowValidator;
 use BulkFlow\Import\SourceRow;
+use BulkFlow\Progress\ProgressPublisher;
+use BulkFlow\Progress\ProgressSnapshot;
 use BulkFlow\Run\DatabaseRunRepository;
 use BulkFlow\Run\ImportRun;
 use Illuminate\Bus\Batchable;
@@ -123,7 +124,8 @@ final class ProcessImportChunk implements ShouldQueue
 
         if ($stopRequested) {
             $this->batch()?->cancel();
-            $runs->complete($this->runId);
+            $completedRun = $runs->complete($this->runId);
+            $this->publishProgress($completedRun);
         }
 
         $this->deleteChunkFile();
@@ -190,7 +192,7 @@ final class ProcessImportChunk implements ShouldQueue
 
     private function publishProgress(ImportRun $run): void
     {
-        event(ImportProgressUpdated::fromRun($run));
+        app(ProgressPublisher::class)->publish(ProgressSnapshot::fromRun($run));
     }
 
     public function failed(Throwable $exception): void

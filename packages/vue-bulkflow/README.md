@@ -41,16 +41,22 @@ Use `client.cancelImport(runId)` to cancel a `queued` or `processing` run. The r
 
 `ImportProgressTracker` has no direct npm dependency on Laravel Echo. The package includes `LaravelEchoProgressSource`, which accepts an Echo-compatible instance; the tracker ignores updates with an older `revision` than its current polling or realtime state.
 
-Use `tracker.poll(3000, onUpdate, onError)` when no realtime transport is available. It returns a stop function; stop polling once the run reaches a terminal state or the component unmounts. `isTerminalImportState(run.state)` includes `cancelled` as well as completed and failed states.
+Use `tracker.track({ source, pollIntervalMs: 3000, onUpdate, onError })` for an initial server snapshot followed by Echo updates. If Echo reports a transport error, the tracker automatically falls back to polling. Omit `source` to poll from the start. `isTerminalImportState(run.state)` includes `cancelled` as well as completed and failed states.
 
 ```ts
 import { ImportProgressTracker, LaravelEchoProgressSource } from '@bulkflow/vue';
 
 const tracker = new ImportProgressTracker(client, runId);
-const disconnect = tracker.connect(new LaravelEchoProgressSource(echo));
+const stop = await tracker.track({
+  source: new LaravelEchoProgressSource(echo),
+  pollIntervalMs: 3000,
+  onUpdate: render,
+});
 
-// Call disconnect() when the component unmounts.
+// Call stop() when the component unmounts.
 ```
 
 The adapter subscribes to the private `bulkflow.imports.{runId}` channel and
-the namespaced event `.bulkflow.progress.updated` automatically.
+the namespaced event `.bulkflow.progress.updated` automatically. For Vue
+components, `useImportProgress(client)` exposes reactive `run`, `error`,
+`start(runId)`, and `stop()` bindings around the same tracker.

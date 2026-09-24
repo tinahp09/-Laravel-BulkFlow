@@ -165,5 +165,7 @@ The package registers the channel callback and applies the same
 `bulkflow.scope` and `bulkflow.authorize` hooks used by its HTTP endpoints. A
 run outside the actor's scope is never authorized for the private channel.
 When broadcasting is unavailable, the Vue tracker can continue using polling.
+Set `bulkflow.progress.publisher` to `null` to disable package progress events
+entirely; HTTP progress snapshots remain available for polling.
 
 Use `bulkflow:prune-runs --before=YYYY-MM-DD` to remove expired run history and failed rows. Preview the exact affected run count without deleting anything with `--dry-run`.

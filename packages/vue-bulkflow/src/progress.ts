@@ -5,11 +5,12 @@ export function isTerminalImportState(state: string): boolean {
 }
 
 export type ImportProgressSource = {
-  subscribe(runId: string, onProgress: (run: ImportRun) => void): () => void;
+  subscribe(runId: string, onProgress: (run: ImportRun) => void, onDisconnect?: () => void): () => void;
 };
 
 type EchoPrivateChannel = {
   listen(event: string, callback: (payload: Record<string, unknown>) => void): void;
+  error?(callback: (error: unknown) => void): void;
 };
 
 export type LaravelEcho = {
@@ -21,7 +22,7 @@ export type LaravelEcho = {
 export class LaravelEchoProgressSource implements ImportProgressSource {
   constructor(private readonly echo: LaravelEcho) {}
 
-  subscribe(runId: string, onProgress: (run: ImportRun) => void): () => void {
+  subscribe(runId: string, onProgress: (run: ImportRun) => void, onDisconnect?: () => void): () => void {
     const channelName = `bulkflow.imports.${runId}`;
     const channel = this.echo.private(channelName);
 
@@ -36,6 +37,7 @@ export class LaravelEchoProgressSource implements ImportProgressSource {
         revision: Number(payload.revision),
       });
     });
+    channel.error?.(() => onDisconnect?.());
 
     return () => this.echo.leave(channelName);
   }
@@ -85,5 +87,37 @@ export class ImportProgressTracker {
 
   connect(source: ImportProgressSource): () => void {
     return source.subscribe(this.runId, (run) => this.apply(run));
+  }
+
+  async track(options: {
+    source?: ImportProgressSource;
+    pollIntervalMs?: number;
+    onUpdate?: (run: ImportRun) => void;
+    onError?: (error: unknown) => void;
+  } = {}): Promise<() => void> {
+    const onUpdate = options.onUpdate ?? (() => undefined);
+    const onError = options.onError ?? (() => undefined);
+    const initial = await this.refresh();
+    onUpdate(initial);
+
+    if (isTerminalImportState(initial.state)) return () => undefined;
+
+    let stopPolling: (() => void) | undefined;
+    const beginPolling = (): void => {
+      if (stopPolling !== undefined) return;
+
+      stopPolling = this.poll(options.pollIntervalMs ?? 3_000, onUpdate, onError);
+    };
+
+    const disconnect = options.source?.subscribe(this.runId, (run) => {
+      if (this.apply(run)) onUpdate(run);
+    }, beginPolling);
+
+    if (options.source === undefined) beginPolling();
+
+    return () => {
+      disconnect?.();
+      stopPolling?.();
+    };
   }
 }

@@ -8,6 +8,7 @@ All notable changes to this monorepo are documented here.
 
 - Error viewer pagination controls and separate CSV/XLSX failure-report links in the Vue demo.
 - Client-side mapping validation that requires every source column to map to a unique destination before an import can start.
+- Optional versioned progress publisher, Laravel Echo transport with polling fallback, and server-paginated, filterable import dashboard history.
 
 ## 1.0.0-rc.1
 

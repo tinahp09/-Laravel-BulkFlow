@@ -80,7 +80,10 @@ final class DatabaseRunRepository
 
     public function setTotalRows(string $runId, int $totalRows): ImportRun
     {
-        ImportRun::query()->whereKey($runId)->update(['total_rows' => $totalRows]);
+        ImportRun::query()->whereKey($runId)->update([
+            'total_rows' => $totalRows,
+            'revision' => DB::raw('revision + 1'),
+        ]);
 
         return ImportRun::query()->findOrFail($runId);
     }

@@ -20,9 +20,21 @@ final class ImportRunController
     public function index(): JsonResponse
     {
         $this->authorize(null);
+        $validated = request()->validate([
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'state' => ['nullable', 'in:queued,processing,completed,completed_with_errors,failed,cancelled'],
+        ]);
+        $query = $this->scopedRuns()->latest();
+
+        if (isset($validated['state'])) {
+            $query->where('state', $validated['state']);
+        }
+
+        $runs = $query->paginate($validated['per_page'] ?? 50);
 
         return response()->json([
-            'data' => $this->scopedRuns()->latest()->get()->map(static fn (ImportRun $run): array => [
+            'data' => collect($runs->items())->map(static fn (ImportRun $run): array => [
                 'id' => $run->id,
                 'state' => $run->state,
                 'total_rows' => $run->total_rows,
@@ -31,6 +43,12 @@ final class ImportRunController
                 'failed_rows' => $run->failed_rows,
                 'revision' => $run->revision,
             ]),
+            'meta' => [
+                'current_page' => $runs->currentPage(),
+                'last_page' => $runs->lastPage(),
+                'per_page' => $runs->perPage(),
+                'total' => $runs->total(),
+            ],
         ]);
     }
 
