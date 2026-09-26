@@ -1,8 +1,9 @@
 {
   "name": "@bulkflow/vue",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0",
   "description": "Vue UI for Laravel BulkFlow.",
   "license": "MIT",
+  "author": "tinahp09 <tinahosseinpour.79@gmail.com>",
   "homepage": "https://github.com/tinahp09/-Laravel-BulkFlow#readme",
   "bugs": {
     "url": "https://github.com/tinahp09/-Laravel-BulkFlow/issues"

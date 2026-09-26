@@ -15,10 +15,10 @@ announcement and does not authorize publishing.
 | Failed rows, filtered review, retry and reports | Feature tests for API/filter/retry/download; live Vue demo displayed a validation failure, filter selector and CSV report link |
 | S3-compatible storage | Live MinIO test: import from disk, export to disk and temporary URL, 3 assertions |
 | Scheduled exports, notifications, history, retention and scope | Integration/feature tests; imports can notify configured Laravel notifiables when complete; pruning requires `--before` and supports non-destructive `--dry-run` |
-| Vue client and demo | 21 Vue tests; package build and independent Vite demo build passed; demo Laravel suite has 6 tests / 12 assertions and uses per-run random passwords rather than reusable credentials |
+| Vue client and demo | 38 Vue tests; package build and independent Vite demo build passed; demo Laravel suite has 13 tests / 43 assertions and uses per-run random passwords rather than reusable credentials |
 | Polling, realtime and cancellation | `ImportProgressTracker` has tested stoppable polling, terminal cancellation, revision ordering and a first-party Laravel Echo adapter. Laravel broadcasts a stable full snapshot on an authorized private channel using the same scope/authorizer hooks as HTTP; an authorized API call cancels a queued batch or pre-dispatch run. A live demo `processing` run was cancelled and then returned as `cancelled` from the show endpoint |
 | Compatibility | Fresh Laravel 12 package discovery and live Laravel 13 demo route discovery; [matrix](COMPATIBILITY.md) |
-| Release artifacts | Root Composer manifest validates and is automatically checked against the Laravel package manifest; an archive smoke test excluded vendors, temporary files and frontend/docs, then installed successfully in the Laravel demo with package discovery. NPM dry-run produced `@bulkflow/vue@1.0.0-rc.1` with only README, dist and package manifest. Both manifests include the verified canonical repository URL and issue tracker |
+| Release artifacts | Root Composer manifest validates and is automatically checked against the Laravel package manifest; an archive smoke test excluded vendors, temporary files and frontend/docs, then installed successfully in the Laravel demo with package discovery. NPM dry-run produces `@bulkflow/vue@1.0.0` with only README, dist and package manifest. Both manifests include the verified canonical repository URL, issue tracker, and maintainer metadata |
 | Release source hygiene | Targeted source/config scan found only null `.env.example` password placeholders and runtime-generated demo passwords; no committed credential value is used by the demo |
 
 ## Deliberate release boundaries
@@ -26,9 +26,7 @@ announcement and does not authorize publishing.
 - This repository contains no GitHub Actions workflow by project decision.
 - Laravel 11 is not advertised as supported because Composer security advisories
   block a fresh secure installation. V1 supports Laravel 12 and 13.
-- The Vue package is versioned `1.0.0-rc.1` for local smoke testing.
-- A public `1.0.0` release requires an owner-approved signed tag, finalized
-  package metadata, Packagist registration and NPM owner credentials. Packagist
+- A public `1.0.0` release requires an owner-approved signed tag, Packagist registration and NPM owner credentials. Packagist
   reads the root Laravel manifest in this monorepo; the checked path mappings
   deliberately load the source under `packages/laravel-bulkflow`. These are
   listed in [RELEASE.md](RELEASE.md) and are not actions that the package

@@ -10,7 +10,7 @@ All notable changes to this monorepo are documented here.
 - Client-side mapping validation that requires every source column to map to a unique destination before an import can start.
 - Optional versioned progress publisher, Laravel Echo transport with polling fallback, and server-paginated, filterable import dashboard history.
 
-## 1.0.0-rc.1
+## 1.0.0 — 2026-09-26
 
 ### Added
 
@@ -29,8 +29,7 @@ All notable changes to this monorepo are documented here.
   Composer security advisories block a fresh Laravel 11 installation; V1 supports
   Laravel 12 and 13.
 
-This release candidate is for local package and demo verification only. It has
-not been published to NPM or Packagist.
+This is the first stable release of the Laravel and Vue packages.
 
 ## Release policy
 

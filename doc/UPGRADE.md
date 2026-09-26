@@ -2,7 +2,7 @@
 
 ## Pre-1.0 to 1.0
 
-There is no previous public stable release. Treat the API as pre-release until the owner approves a `1.0.0` tag.
+There is no previous public stable release. `1.0.0` establishes the first stable API baseline.
 
 Before adopting a release candidate:
 

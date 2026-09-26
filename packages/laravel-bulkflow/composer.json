@@ -3,6 +3,12 @@
   "description": "Streaming bulk imports and exports for Laravel.",
   "type": "library",
   "license": "MIT",
+  "authors": [
+    {
+      "name": "tinahp09",
+      "email": "tinahosseinpour.79@gmail.com"
+    }
+  ],
   "homepage": "https://github.com/tinahp09/-Laravel-BulkFlow",
   "support": {
     "issues": "https://github.com/tinahp09/-Laravel-BulkFlow/issues",
